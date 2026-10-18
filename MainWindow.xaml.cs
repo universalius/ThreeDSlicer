@@ -12,6 +12,7 @@ using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
+using Microsoft.Web.WebView2.Core;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -26,6 +27,25 @@ namespace ThreeDSlicer
         public MainWindow()
         {
             InitializeComponent();
+            if (this.Content is FrameworkElement root)
+            {
+                root.Loaded += MainWindow_Loaded;
+            }
+        }
+
+        private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (MainWebView != null)
+                {
+                    await MainWebView.EnsureCoreWebView2Async();
+                }
+            }
+            catch (Exception)
+            {
+                // Initialization failed (WebView2 runtime may be missing)
+            }
         }
     }
 }
