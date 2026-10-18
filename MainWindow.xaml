@@ -15,6 +15,6 @@
     </Window.SystemBackdrop>
 
     <Grid>
-        <webview2:WebView2 x:Name="MainWebView" Source="https://www.bing.com" />
+        <webview2:WebView2 x:Name="MainWebView" />
     </Grid>
 </Window>
