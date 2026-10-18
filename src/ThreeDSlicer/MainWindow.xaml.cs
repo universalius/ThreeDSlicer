@@ -15,6 +15,8 @@ using System.Threading.Tasks;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using Microsoft.Web.WebView2.Core;
+using _3DObjectToGCode.Application.Features.ObjToMeshConverter;
+using _3DObjectToGCode.Application.Features.CylinderObjectToSvgConverter;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -26,9 +28,16 @@ namespace ThreeDSlicer
     /// </summary>
     public sealed partial class MainWindow : Window
     {
-        public MainWindow()
+        private readonly ObjToMeshConverterService _objToMeshConverter;
+        private readonly CylinderObjectToSvgConverterSevice _cylinderToSvgConverter;
+
+        public MainWindow(ObjToMeshConverterService objToMeshConverter, CylinderObjectToSvgConverterSevice cylinderToSvgConverter)
         {
             InitializeComponent();
+
+            _objToMeshConverter = objToMeshConverter;
+            _cylinderToSvgConverter = cylinderToSvgConverter;
+
             if (this.Content is FrameworkElement root)
             {
                 root.Loaded += MainWindow_Loaded;
@@ -37,6 +46,9 @@ namespace ThreeDSlicer
 
         private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
+            var meshObject = await _objToMeshConverter.Convert();
+            var profilePoints = _cylinderToSvgConverter.Convert(meshObject);
+
             try
             {
                 if (MainWebView != null)

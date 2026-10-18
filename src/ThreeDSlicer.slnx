@@ -4,6 +4,10 @@
     <Platform Name="x64" />
     <Platform Name="x86" />
   </Configurations>
+  <Folder Name="/Dependencies/">
+    <Project Path="../../SvgLib/SvgLib.csproj" />
+  </Folder>
+  <Project Path="../../ObjParser/ObjParser.csproj" />
   <Project Path="ThreeDSlicer.Application/ThreeDSlicer.Application.csproj" Id="9f3b24d3-fbe7-4763-b372-526e3ad2de1f" />
   <Project Path="ThreeDSlicer/ThreeDSlicer.csproj">
     <Platform Solution="*|ARM64" Project="ARM64" />
