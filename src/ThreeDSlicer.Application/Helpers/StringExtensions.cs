@@ -1,9 +1,9 @@
-﻿using _3DObjectToGCode.Application.Enums;
+﻿using ThreeDSlicer.Application.Enums;
 using GeometRi;
 using System.Globalization;
 using System.Linq;
 
-namespace _3DObjectToGCode.Application.Helpers;
+namespace ThreeDSlicer.Application.Helpers;
 
 public static class StringExtensions
 {

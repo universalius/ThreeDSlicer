@@ -2,7 +2,7 @@
 using ObjParser.Types;
 using System.Collections.Generic;
 
-namespace _3DObjectToGCode.Application.Features.ObjToMeshConverter;
+namespace ThreeDSlicer.Application.Features.ObjToMeshConverter;
 
 public class MeshObject
 {

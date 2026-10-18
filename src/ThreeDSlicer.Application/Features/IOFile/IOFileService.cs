@@ -4,7 +4,7 @@ using System;
 using System.IO;
 using System.Threading.Tasks;
 
-namespace _3DObjectToGCode.Application.Features.IOFile;
+namespace ThreeDSlicer.Application.Features.IOFile;
 
 public class IOFileService
 {

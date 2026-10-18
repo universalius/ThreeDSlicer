@@ -15,8 +15,8 @@ using System.Threading.Tasks;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using Microsoft.Web.WebView2.Core;
-using _3DObjectToGCode.Application.Features.ObjToMeshConverter;
-using _3DObjectToGCode.Application.Features.CylinderObjectToSvgConverter;
+using ThreeDSlicer.Application.Features.ObjToMeshConverter;
+using ThreeDSlicer.Application.Features.CylinderObjectToSvgConverter;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.

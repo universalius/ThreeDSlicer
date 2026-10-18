@@ -1,7 +1,7 @@
-﻿using _3DObjectToGCode.Application.Enums;
+﻿using ThreeDSlicer.Application.Enums;
 using GeometRi;
 
-namespace _3DObjectToGCode.Application.Helpers;
+namespace ThreeDSlicer.Application.Helpers;
 
 public static class PointHelpers
 {

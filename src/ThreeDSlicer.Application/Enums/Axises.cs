@@ -1,4 +1,4 @@
-﻿namespace _3DObjectToGCode.Application.Enums;
+﻿namespace ThreeDSlicer.Application.Enums;
 
 public enum Axises
 {

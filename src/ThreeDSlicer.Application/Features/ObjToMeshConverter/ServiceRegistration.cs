@@ -1,8 +1,8 @@
-using _3DObjectToGCode.Application.Features.IOFile;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using ThreeDSlicer.Application.Features.IOFile;
 
-namespace _3DObjectToGCode.Application.Features.ObjToMeshConverter;
+namespace ThreeDSlicer.Application.Features.ObjToMeshConverter;
 
 public static class ServiceRegistration
 {

@@ -23,4 +23,7 @@
     <ProjectReference Include="..\..\..\ObjParser\ObjParser.csproj" />
     <ProjectReference Include="..\..\..\SvgLib\SvgLib.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Features\ObjectToSvgConverter\" />
+  </ItemGroup>
 </Project>

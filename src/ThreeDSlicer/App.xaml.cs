@@ -11,15 +11,14 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
-using Windows.ApplicationModel;
 using Windows.ApplicationModel.Activation;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using _3DObjectToGCode.Application.Features.ObjToMeshConverter;
-using _3DObjectToGCode.Application.Features.CylinderObjectToSvgConverter;
+using ThreeDSlicer.Application.Features.ObjToMeshConverter;
+using ThreeDSlicer.Application.Features.CylinderObjectToSvgConverter;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -29,7 +28,7 @@ namespace ThreeDSlicer
     /// <summary>
     /// Provides application-specific behavior to supplement the default Application class.
     /// </summary>
-    public partial class App : Application
+    public partial class App : Microsoft.UI.Xaml.Application
     {
         private Window? _window;
         public static IHost? AppHost { get; private set; }
@@ -84,8 +83,8 @@ namespace ThreeDSlicer
 
             // Resolve feature services from the host and inject into the MainWindow
             var objConverter = Services.GetRequiredService<ObjToMeshConverterService>();
-            var cylinderConverter = Services.GetRequiredService<CylinderObjectToSvgConverterSevice>();
-            _window = new MainWindow(objConverter, cylinderConverter);
+            var objectConverter = Services.GetRequiredService<CylinderObjectToSvgConverterSevice>();
+            _window = new MainWindow(objConverter, objectConverter);
 
             // Stop the host when the main window is closed to ensure graceful shutdown
             _window.Closed += async (s, e) =>

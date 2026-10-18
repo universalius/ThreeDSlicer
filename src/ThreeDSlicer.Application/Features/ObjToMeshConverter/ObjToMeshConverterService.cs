@@ -1,26 +1,33 @@
-﻿using _3DObjectToGCode.Application.Features.IOFile;
-using ObjParser;
+﻿using ObjParser;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using ThreeDSlicer.Application.Features.IOFile;
 
-namespace _3DObjectToGCode.Application.Features.ObjToMeshConverter;
+namespace ThreeDSlicer.Application.Features.ObjToMeshConverter;
 
-public class ObjToMeshConverterService(IOFileService _file)
+public class ObjToMeshConverterService
 {
+    private readonly IOFileService _file;
+
+    public ObjToMeshConverterService(IOFileService file)
+    {
+        _file = file;
+    }
+
     public async Task<MeshObject> Convert()
     {
         var content = await _file.ReadObjFile();
         var contentWitoutComments = content.Where(l => !l.StartsWith("#"));
 
         var meshesText = string.Join(Environment.NewLine, contentWitoutComments)
-            .Split("o ")
+            .Split(new string[] { "o " }, StringSplitOptions.None)
             .Where(t => !(string.IsNullOrEmpty(t) || t == "\r\n")).ToList();
 
         var meshText = meshesText.First();
 
-        var mesTextLines = meshText.Split(["\r\n", "\r", "\n"], StringSplitOptions.None);
+        var mesTextLines = meshText.Split(new string[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
         var obj = new Obj();
         obj.VertexListShift = 0;
         obj.NormalListShift = 0;

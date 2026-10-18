@@ -2,7 +2,7 @@ using Flat3DObjectsToSvgConverter.Models;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 
-namespace _3DObjectToGCode.Application.Features.IOFile;
+namespace ThreeDSlicer.Application.Features.IOFile;
 
 public static class ServiceRegistration
 {

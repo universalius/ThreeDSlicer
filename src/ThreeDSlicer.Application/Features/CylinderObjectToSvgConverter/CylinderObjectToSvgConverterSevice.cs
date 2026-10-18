@@ -1,7 +1,7 @@
-﻿using _3DObjectToGCode.Application.Enums;
-using _3DObjectToGCode.Application.Features.IOFile;
-using _3DObjectToGCode.Application.Features.ObjToMeshConverter;
-using _3DObjectToGCode.Application.Helpers;
+using ThreeDSlicer.Application.Enums;
+using ThreeDSlicer.Application.Features.IOFile;
+using ThreeDSlicer.Application.Features.ObjToMeshConverter;
+using ThreeDSlicer.Application.Helpers;
 using GeometRi;
 using Microsoft.Extensions.Logging;
 using ObjParser;
@@ -10,7 +10,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace _3DObjectToGCode.Application.Features.CylinderObjectToSvgConverter;
+namespace ThreeDSlicer.Application.Features.CylinderObjectToSvgConverter;
 
 public class CylinderObjectToSvgConverterSevice(IOFileService fileService, ILogger<CylinderObjectToSvgConverterSevice> logger)
 {
