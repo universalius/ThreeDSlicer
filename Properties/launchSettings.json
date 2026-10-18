@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "ThreeDSlicer (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "ThreeDSlicer (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}
