@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 400 400">
+  <defs>
+    <!-- Патерн розміром 20x20 пікселів -->
+    <pattern id="hatch-45" width="20" height="20" patternUnits="userSpaceOnUse">
+      <!-- Лінія від верхнього лівого кута (0,0) до нижнього правого (20,20) створює кут 45° -->
+      <line x1="0" y1="0" x2="20" y2="20" stroke="#4A5568" stroke-width="2" stroke-linecap="square" />
+      <!-- Додатковий штрих у протилежному куті для безшовності повторення -->
+      <line x1="0" y1="20" x2="20" y2="0" stroke="transparent" />
+    </pattern>
+  </defs>
+
+  <!-- Світлий фон -->
+  <rect width="100%" height="100%" fill="#F7FAFC" />
+
+  <!-- Заливка патерном 45 градусів -->
+  <rect width="100%" height="100%" fill="url(#hatch-45)" />
+</svg>

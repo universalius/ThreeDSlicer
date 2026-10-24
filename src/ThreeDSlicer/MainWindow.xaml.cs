@@ -1,3 +1,4 @@
+using Microsoft.UI;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
@@ -5,8 +6,10 @@ using Microsoft.UI.Xaml.Data;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Navigation;
+using Microsoft.UI.Windowing;
 using Microsoft.Web.WebView2.Core;
 using SvgLib;
+using WinRT.Interop;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -21,6 +24,8 @@ using Windows.Foundation;
 using Windows.Foundation.Collections;
 using ThreeDSlicer.Application.Helpers;
 using ThreeDSlicer.Application.Helpers.GeometryHelpers;
+using GeometRi;
+using ThreeDSlicer.Application.Enums;
 
 
 // To learn more about WinUI, the WinUI project structure,
@@ -40,6 +45,20 @@ namespace ThreeDSlicer
         {
             InitializeComponent();
 
+            var windowHandle = WindowNative.GetWindowHandle(this);
+            var windowId = Win32Interop.GetWindowIdFromWindow(windowHandle);
+            var appWindow = AppWindow.GetFromWindowId(windowId);
+
+            if (appWindow is not null)
+            {
+                appWindow.Show();
+
+                if (appWindow.Presenter is OverlappedPresenter overlappedPresenter)
+                {
+                    overlappedPresenter.Maximize();
+                }
+            }
+
             _objToMeshConverter = objToMeshConverter;
             _cylinderToSvgConverter = cylinderToSvgConverter;
 
@@ -52,7 +71,7 @@ namespace ThreeDSlicer
         private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
             var meshObject = await _objToMeshConverter.Convert();
-            var (profilePoints, axis) = _cylinderToSvgConverter.Convert(meshObject);
+            var profilePoints = _cylinderToSvgConverter.Convert(meshObject, Axises.YZ);
 
             try
             {
@@ -114,22 +133,7 @@ namespace ThreeDSlicer
                                 return;
                             }
 
-                            var bounds = profilePoints.GetPolygonBounds();
-
-                            var xMin = bounds.XMin > 0 ? bounds.XMin + 5 : bounds.XMin - 5;
-                            var yMin = bounds.YMin > 0 ? bounds.YMin + 5 : bounds.YMin - 5;
-
-                            var svgDocument = SvgDocument.Create();
-                            svgDocument.Units = "%";
-                            svgDocument.ViewBox = new SvgViewBox(xMin, yMin, bounds.Width + 2 * 5, bounds.Height);
-                            svgDocument.Width = 100;
-                            svgDocument.Height = 100;
-
-                            var path = svgDocument.AddPath();
-                            path.D = profilePoints.ToPathString();
-                            path.SetStyle("stroke-width", "1");
-                            path.SetStyle("stroke", "red");
-                            path.SetStyle("fill", "none");
+                            var svgDocument = BuildSvg(profilePoints);
 
                             var payload = new
                             {
@@ -151,6 +155,44 @@ namespace ThreeDSlicer
             {
                 // Initialization failed (WebView2 runtime may be missing)
             }
+        }
+    
+        private SvgDocument BuildSvg(Point3d[] profilePoints)
+        {
+            var bounds = profilePoints.GetPolygonBounds();
+
+            var xMin = bounds.XMin > 0 ? bounds.XMin + 5 : bounds.XMin - 5;
+            var yMin = bounds.YMin > 0 ? bounds.YMin + 5 : bounds.YMin - 5;
+
+            var svgDocument = SvgDocument.Create();
+            svgDocument.Units = "%";
+            svgDocument.ViewBox = new SvgViewBox(xMin, yMin, bounds.Width + 2 * 5, bounds.Height);
+            svgDocument.Width = 100;
+            svgDocument.Height = 100;
+
+            var path = svgDocument.AddPath();
+            path.D = profilePoints.ToPathString();
+            path.SetStyle("stroke-width", "1");
+            path.SetStyle("stroke", "red");
+            path.SetStyle("fill", "url(#hatch-45)");
+
+            var defs = svgDocument.AddDefs();
+            var pattern = defs.AddPattern();
+            pattern.Id = "hatch-45";
+            pattern.Width = 10;
+            pattern.Height = 10;
+            pattern.PatternUnits = "userSpaceOnUse";
+
+            var line = pattern.AddLine();
+            line.X1 = 0;
+            line.Y1 = 0;
+            line.X2 = 20;
+            line.Y2 = 20;
+            line.SetStyle("stroke", "red");
+            line.SetStyle("stroke-width", "0.5");
+            line.SetStyle("stroke-linecap", "square");
+
+            return svgDocument;
         }
     }
 }

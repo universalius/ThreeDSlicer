@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { UncontrolledReactSVGPanZoom } from 'react-svg-pan-zoom'
+import { UncontrolledReactSVGPanZoom, ALIGN_LEFT, ALIGN_CENTER } from 'react-svg-pan-zoom'
 import { renderSvgNode } from '../helpers/renderSvgNode'
+import svgTest from './svgTest.svg?raw'
 
 export const SvgRenderer = ({ svgMarkup }: { svgMarkup: string }) => {
   const containerRef = useRef<HTMLDivElement | null>(null)
-  const viewer = useRef(null);
+  const viewer = useRef<{ fitToViewer?: () => void } | null>(null)
   const [viewportSize, setViewportSize] = useState({ width: 800, height: 600 })
 
   useEffect(() => {
@@ -16,16 +17,14 @@ export const SvgRenderer = ({ svgMarkup }: { svgMarkup: string }) => {
 
     const updateSize = () => {
       const rect = element.getBoundingClientRect()
-      setViewportSize({
-        width: Math.max(300, Math.round(rect.width)),
-        height: Math.max(250, Math.round(rect.height)),
-      })
+      const width = Math.max(300, Math.round(rect.width))
+      const height = Math.max(250, Math.round(rect.height))
 
-      viewer.current?.fitToViewer();
+      setViewportSize({ width, height })
+      viewer.current?.fitToViewer?.(ALIGN_LEFT, ALIGN_CENTER)
     }
 
     updateSize()
-
 
     const resizeObserver = new ResizeObserver(updateSize)
     resizeObserver.observe(element)
@@ -33,12 +32,14 @@ export const SvgRenderer = ({ svgMarkup }: { svgMarkup: string }) => {
     return () => resizeObserver.disconnect()
   }, [])
 
+  const resolvedSvgMarkup = svgMarkup || svgTest
+
   const renderedSvg = useMemo(() => {
-    if (!svgMarkup) {
+    if (!resolvedSvgMarkup) {
       return null
     }
 
-    const parsed = new DOMParser().parseFromString(svgMarkup, 'image/svg+xml')
+    const parsed = new DOMParser().parseFromString(resolvedSvgMarkup, 'image/svg+xml')
     const svgElement = parsed.documentElement
 
     if (!svgElement || svgElement.nodeName.toLowerCase() !== 'svg') {
@@ -46,7 +47,7 @@ export const SvgRenderer = ({ svgMarkup }: { svgMarkup: string }) => {
     }
 
     return renderSvgNode(svgElement)
-  }, [svgMarkup])
+  }, [resolvedSvgMarkup])
 
   if (!renderedSvg) {
     return null
@@ -62,7 +63,7 @@ export const SvgRenderer = ({ svgMarkup }: { svgMarkup: string }) => {
         scaleFactorMin={0.2}
         scaleFactorMax={8}
         background="transparent"
-        miniatureProps={{ position: 'none' }}
+        miniatureProps={{ position: 'none', background: 'transparent', width: 120, height: 120 }}
         toolbarProps={{ position: 'none' }}
       >
         {renderedSvg}

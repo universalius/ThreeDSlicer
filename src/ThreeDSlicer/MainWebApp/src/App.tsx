@@ -47,13 +47,13 @@ console.log('App component rendered');
 
   return (
     <div className={styles.appShell}>
-      {!svgMarkup ? (
+      {/* {!svgMarkup ? (
         <div className={styles.loadingText}>Waiting for SVG data…</div>
-      ) : (
+      ) : ( */}
         <div className={styles.svgPanel}>
           <SvgRenderer svgMarkup={svgMarkup} />
         </div>
-      )}
+      {/* )} */}
     </div>
   )
 }
