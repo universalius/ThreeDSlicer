@@ -18,6 +18,7 @@ using System.Net.Http;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Text.Json;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
 using ThreeDSlicer.Application.Features.CylinderObjectToSvgConverter;
 using ThreeDSlicer.Application.Features.ObjToMeshConverter;
 using Windows.Foundation;
@@ -26,6 +27,7 @@ using ThreeDSlicer.Application.Helpers;
 using ThreeDSlicer.Application.Helpers.GeometryHelpers;
 using GeometRi;
 using ThreeDSlicer.Application.Enums;
+using ThreeDSlicer.Application.Models;
 
 
 // To learn more about WinUI, the WinUI project structure,
@@ -128,21 +130,29 @@ namespace ThreeDSlicer
                         core.WebMessageReceived += (sender, args) =>
                         {
                             var message = args.TryGetWebMessageAsString();
-                            if (message != "{\"type\":\"app-ready\"}")
+                            if (string.IsNullOrWhiteSpace(message))
                             {
                                 return;
                             }
 
-                            var svgDocument = BuildSvg(profilePoints);
-
-                            var payload = new
+                            var webViewMessage = JsonConvert.DeserializeObject<WebViewMessage>(message);
+                            if (webViewMessage is null)
                             {
-                                type = "initial-data",
-                                svg = svgDocument.Element.OuterXml
-                            };
+                                return;
+                            }
 
-                            var jsonPayload = JsonSerializer.Serialize(payload);
-                            core.PostWebMessageAsJson(jsonPayload);
+                            if (webViewMessage.Type == "app-ready")
+                            {
+                                sendSvgToFrontend(core, profilePoints);
+                                return;
+                            }
+
+                            if (webViewMessage.Type == "cross-section")
+                            {
+                                var requestPoints = _cylinderToSvgConverter.Convert(meshObject, webViewMessage.Axis);
+                                sendSvgToFrontend(core, requestPoints);
+                                return;
+                            }
                         };
                     }
                     catch (Exception)
@@ -157,6 +167,20 @@ namespace ThreeDSlicer
             }
         }
     
+        private void sendSvgToFrontend(CoreWebView2 core, Point3d[] points)
+        {
+            var svgDocument = BuildSvg(points);
+
+            var payload = new
+            {
+                type = "svg-data",
+                svg = svgDocument.Element.OuterXml
+            };
+
+            var jsonPayload = JsonConvert.SerializeObject(payload);
+            core.PostWebMessageAsJson(jsonPayload);
+        }
+
         private SvgDocument BuildSvg(Point3d[] profilePoints)
         {
             var bounds = profilePoints.GetPolygonBounds();

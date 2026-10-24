@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { UncontrolledReactSVGPanZoom, ALIGN_LEFT, ALIGN_CENTER } from 'react-svg-pan-zoom'
 import { renderSvgNode } from '../helpers/renderSvgNode'
-import svgTest from './svgTest.svg?raw'
 
 export const SvgRenderer = ({ svgMarkup }: { svgMarkup: string }) => {
   const containerRef = useRef<HTMLDivElement | null>(null)
@@ -32,7 +31,7 @@ export const SvgRenderer = ({ svgMarkup }: { svgMarkup: string }) => {
     return () => resizeObserver.disconnect()
   }, [])
 
-  const resolvedSvgMarkup = svgMarkup || svgTest
+  const resolvedSvgMarkup = svgMarkup;
 
   const renderedSvg = useMemo(() => {
     if (!resolvedSvgMarkup) {

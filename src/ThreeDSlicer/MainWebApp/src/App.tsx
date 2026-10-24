@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react'
 import { SvgRenderer } from './components/SvgRenderer'
 import styles from './App.module.css'
+import { Axises } from './types'
 import type { WebViewMessage, WebViewBridge } from './types'
+import svgTest from './components/svgTest.svg?raw'
 
 declare global {
   interface Window {
@@ -12,14 +14,14 @@ declare global {
 }
 
 export default function App() {
+  console.log('App component rendered')
 
-console.log('App component rendered');
-
-
-  const [data, setData] = useState<WebViewMessage>({ type: '', svg: '' })
+  const [data, setData] = useState<WebViewMessage>()
+  const [selectedAxis, setSelectedAxis] = useState<Axises>(Axises.XY)
+  const webview = window.chrome?.webview
 
   const handleMessage = (event: MessageEvent) => {
-    console.log('Received message from WebView2:', event);
+    console.log('Received message from WebView2:', event)
 
     try {
       setData(event.data)
@@ -28,9 +30,12 @@ console.log('App component rendered');
     }
   }
 
-  useEffect(() => {
-    const webview = window.chrome?.webview
+  const sendCrossSection = (axis: Axises) => {
+    setSelectedAxis(axis)
+    webview?.postMessage(JSON.stringify({ type: 'cross-section', axis }))
+  }
 
+  useEffect(() => {
     if (webview) {
       webview.addEventListener('message', handleMessage)
       webview.postMessage(JSON.stringify({ type: 'app-ready' }))
@@ -41,19 +46,42 @@ console.log('App component rendered');
         webview.removeEventListener('message', handleMessage)
       }
     }
-  }, [])
+  }, [webview])
 
-  const svgMarkup = data?.svg ?? ''
+  const svgMarkup = data?.svg ?? svgTest
+  const axisOptions = [
+    { label: 'Front', axis: Axises.XY },
+    { label: 'Left', axis: Axises.YZ },
+    { label: 'Top', axis: Axises.XZ },
+  ]
+  const selectedViewLabel = axisOptions.find(({ axis }) => axis === selectedAxis)?.label ?? 'Front'
 
   return (
     <div className={styles.appShell}>
-      {/* {!svgMarkup ? (
+      <div className={styles.buttonRow}>
+        <div className={styles.buttonGroup}>
+          {axisOptions.map(({ label, axis }) => (
+            <button
+              key={label}
+              type="button"
+              className={selectedAxis === axis ? `${styles.axisButton} ${styles.axisButtonSelected}` : styles.axisButton}
+              onClick={() => sendCrossSection(axis)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        <div className={styles.selectedText}>View: {selectedViewLabel}</div>
+      </div>
+
+      {!svgMarkup ? (
         <div className={styles.loadingText}>Waiting for SVG data…</div>
-      ) : ( */}
+      ) : (
         <div className={styles.svgPanel}>
           <SvgRenderer svgMarkup={svgMarkup} />
         </div>
-      {/* )} */}
+      )}
     </div>
   )
 }
