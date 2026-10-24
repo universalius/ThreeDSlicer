@@ -14,7 +14,7 @@ namespace ThreeDSlicer.Application.Features.CylinderObjectToSvgConverter;
 
 public class CylinderObjectToSvgConverterSevice(IOFileService fileService, ILogger<CylinderObjectToSvgConverterSevice> logger)
 {
-    public IEnumerable<Point3d> Convert(MeshObject meshObject)
+    public (IEnumerable<Point3d> points,Axises axis) Convert(MeshObject meshObject)
     {
         //var rect = new[] { new Point3d(1.0, 1.0, 1.0), new Point3d(1.0, 5.0, 1.0), new Point3d(4.0, 5.0, 1.0), new Point3d(4.0, 1.0, 1.0), new Point3d(1.0, 1.0, 1.0) };
         //var a = new Plane3d(rect[0], rect[1], rect[2]);
@@ -155,8 +155,8 @@ public class CylinderObjectToSvgConverterSevice(IOFileService fileService, ILogg
 
         fileService.SaveSvg($"{targetProfileCurve.Axis.ToString()}_cross_slice", svgDocument.Element.OuterXml);
 
-        return profileCurvePoints
-            .Select(p => p.ChangeAxises(targetProfileCurve.Axis)).ToArray();
+        return (profileCurvePoints
+            .Select(p => p.ChangeAxises(targetProfileCurve.Axis)).ToArray(), targetProfileCurve.Axis);
     }
 
     private IEnumerable<Point3d> GetCrossEdgePoints(IEnumerable<CrossEdge> crossEdges,

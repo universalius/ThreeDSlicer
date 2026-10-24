@@ -5,18 +5,22 @@ using Microsoft.UI.Xaml.Data;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Navigation;
+using Microsoft.Web.WebView2.Core;
+using SvgLib;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
 using System.Net.Http;
+using System.Runtime.InteropServices.WindowsRuntime;
+using System.Text.Json;
 using System.Threading.Tasks;
+using ThreeDSlicer.Application.Features.CylinderObjectToSvgConverter;
+using ThreeDSlicer.Application.Features.ObjToMeshConverter;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
-using Microsoft.Web.WebView2.Core;
-using ThreeDSlicer.Application.Features.ObjToMeshConverter;
-using ThreeDSlicer.Application.Features.CylinderObjectToSvgConverter;
+using ThreeDSlicer.Application.Helpers;
+
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -47,7 +51,7 @@ namespace ThreeDSlicer
         private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
             var meshObject = await _objToMeshConverter.Convert();
-            var profilePoints = _cylinderToSvgConverter.Convert(meshObject);
+            var (profilePoints, axis) = _cylinderToSvgConverter.Convert(meshObject);
 
             try
             {
@@ -58,6 +62,7 @@ namespace ThreeDSlicer
                     try
                     {
                         var core = MainWebView.CoreWebView2;
+                        core.OpenDevToolsWindow();
 
                         // First try dev server (Vite) at localhost:3000
                         var devUrl = "http://localhost:3000";
@@ -99,6 +104,33 @@ namespace ThreeDSlicer
                                 }
                             }
                         }
+
+                        core.WebMessageReceived += (sender, args) =>
+                        {
+                            var message = args.TryGetWebMessageAsString();
+                            if (message != "{\"type\":\"app-ready\"}")
+                            {
+                                return;
+                            }
+
+                            var svgDocument = SvgDocument.Create();
+                            svgDocument.Units = "mm";
+
+                            var path = svgDocument.AddPath();
+                            path.D = profilePoints.ToArray().ToPathString(axis);
+                            path.SetStyle("stroke-width", "1");
+                            path.SetStyle("stroke", "red");
+                            path.SetStyle("fill", "none");
+
+                            var payload = new
+                            {
+                                type = "initial-data",
+                                svg = svgDocument.Element.OuterXml
+                            };
+
+                            var jsonPayload = JsonSerializer.Serialize(payload);
+                            core.PostWebMessageAsJson(jsonPayload);
+                        };
                     }
                     catch (Exception)
                     {
