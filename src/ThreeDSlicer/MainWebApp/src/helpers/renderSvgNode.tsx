@@ -1,5 +1,29 @@
 import React from 'react'
 
+const normalizeSvgAttributeName = (name: string): string => {
+  if (name === 'class') {
+    return 'className'
+  }
+
+  if (name === 'for') {
+    return 'htmlFor'
+  }
+
+  if (name === 'viewBox') {
+    return 'viewBox'
+  }
+
+  if (name.startsWith('data-') || name.startsWith('aria-')) {
+    return name
+  }
+
+  if (name.includes(':')) {
+    return name.replace(/:([a-z])/g, (_, letter: string) => letter.toUpperCase())
+  }
+
+  return name.replace(/-([a-z])/g, (_, letter: string) => letter.toUpperCase())
+}
+
 const parseCssStyle = (styleText: string): Record<string, string> => {
   const style: Record<string, string> = {}
 
@@ -33,6 +57,7 @@ export const renderSvgNode = (node: Node): React.ReactNode => {
 
   for (const attribute of Array.from(element.attributes)) {
     const { name, value } = attribute
+    const propName = normalizeSvgAttributeName(name)
 
     if (name === 'style') {
       props.style = parseCssStyle(value)
@@ -44,7 +69,7 @@ export const renderSvgNode = (node: Node): React.ReactNode => {
       continue
     }
 
-    props[name] = value
+    props[propName] = value
   }
 
   const children = Array.from(element.childNodes).map(renderSvgNode)

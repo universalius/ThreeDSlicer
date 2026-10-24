@@ -17,5 +17,7 @@ export const SvgRenderer = ({ svgMarkup }: { svgMarkup: string }) => {
     return renderSvgNode(svgElement)
   }, [svgMarkup])
 
+console.log('Rendered SVG:', renderedSvg)
+
   return renderedSvg
 }

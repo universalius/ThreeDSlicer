@@ -39,6 +39,11 @@ public static class StringExtensions
         return string.Empty;
     }
 
+    public static string ToPathString(this Point3d[] points)
+    {
+        return $"M {string.Join(" ", points.Select(p => p.ToPathPointString(Axises.XY)))} z";
+    }
+
     public static string ToPathString(this Point3d[] points, Axises axis)
     {
         return $"M {string.Join(" ", points.Select(p => p.ToPathPointString(axis)))} z";

@@ -20,6 +20,7 @@ using ThreeDSlicer.Application.Features.ObjToMeshConverter;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using ThreeDSlicer.Application.Helpers;
+using ThreeDSlicer.Application.Helpers.GeometryHelpers;
 
 
 // To learn more about WinUI, the WinUI project structure,
@@ -69,11 +70,11 @@ namespace ThreeDSlicer
                         var devAvailable = false;
                         try
                         {
-                            using var http = new HttpClient() { Timeout = TimeSpan.FromMilliseconds(800) };
+                            using var http = new HttpClient() { Timeout = TimeSpan.FromMilliseconds(3000) };
                             var res = await http.GetAsync(devUrl);
                             devAvailable = res.IsSuccessStatusCode;
                         }
-                        catch
+                        catch (Exception ex)
                         {
                             devAvailable = false;
                         }
@@ -113,11 +114,19 @@ namespace ThreeDSlicer
                                 return;
                             }
 
+                            var bounds = profilePoints.GetPolygonBounds();
+
+                            var xMin = bounds.XMin > 0 ? bounds.XMin + 5 : bounds.XMin - 5;
+                            var yMin = bounds.YMin > 0 ? bounds.YMin + 5 : bounds.YMin - 5;
+
                             var svgDocument = SvgDocument.Create();
-                            svgDocument.Units = "mm";
+                            svgDocument.Units = "%";
+                            svgDocument.ViewBox = new SvgViewBox(xMin, yMin, bounds.Width + 2 * 5, bounds.Height);
+                            svgDocument.Width = 100;
+                            svgDocument.Height = 100;
 
                             var path = svgDocument.AddPath();
-                            path.D = profilePoints.ToArray().ToPathString(axis);
+                            path.D = profilePoints.ToPathString();
                             path.SetStyle("stroke-width", "1");
                             path.SetStyle("stroke", "red");
                             path.SetStyle("fill", "none");
