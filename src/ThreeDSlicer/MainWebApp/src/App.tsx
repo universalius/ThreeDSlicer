@@ -18,6 +18,7 @@ export default function App() {
 
   const [data, setData] = useState<WebViewMessage>()
   const [selectedAxis, setSelectedAxis] = useState<Axises>(Axises.XY)
+  const [slicePosition, setSlicePosition] = useState<number>(50)
   const webview = window.chrome?.webview
 
   const handleMessage = (event: MessageEvent) => {
@@ -33,6 +34,15 @@ export default function App() {
   const sendCrossSection = (axis: Axises) => {
     setSelectedAxis(axis)
     webview?.postMessage(JSON.stringify({ type: 'cross-section', axis }))
+  }
+
+  const handleSliceChange = (value: number) => {
+    setSlicePosition(value)
+  }
+
+  const handleSliceCommit = () => {
+    console.log('Sending slice position to WebView2:', slicePosition)
+    webview?.postMessage(JSON.stringify({ type: 'cross-section', axis: selectedAxis, cutPosition: slicePosition }))
   }
 
   useEffect(() => {
@@ -71,6 +81,17 @@ export default function App() {
             </button>
           ))}
         </div>
+
+        <input
+          type="range"
+          min={0}
+          max={100}
+          value={slicePosition}
+          onChange={(event) => handleSliceChange(Number(event.target.value))}
+          onMouseUp={handleSliceCommit}
+          className={styles.sliceSlider}
+          aria-label="Slice position"
+        />
 
         <div className={styles.selectedText}>View: {selectedViewLabel}</div>
       </div>

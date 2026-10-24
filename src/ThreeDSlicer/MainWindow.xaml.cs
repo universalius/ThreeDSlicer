@@ -149,7 +149,7 @@ namespace ThreeDSlicer
 
                             if (webViewMessage.Type == "cross-section")
                             {
-                                var requestPoints = _cylinderToSvgConverter.Convert(meshObject, webViewMessage.Axis);
+                                var requestPoints = _cylinderToSvgConverter.Convert(meshObject, webViewMessage.Axis, webViewMessage.CutPosition);
                                 sendSvgToFrontend(core, requestPoints);
                                 return;
                             }

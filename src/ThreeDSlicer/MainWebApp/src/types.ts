@@ -7,6 +7,7 @@ export enum Axises {
 export type WebViewMessage = {
   type?: string
   axis?: Axises
+  relativePosition?: number
   svg?: string
 }
 

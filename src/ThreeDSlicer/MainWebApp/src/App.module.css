@@ -11,14 +11,20 @@
 .buttonRow {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 12px;
+  width: 100%;
   margin-bottom: 16px;
 }
 
 .buttonGroup {
   display: flex;
   gap: 12px;
+  flex-shrink: 0;
+}
+
+.sliceSlider {
+  width: 350px;
+  accent-color: #2563eb;
 }
 
 .axisButton {
@@ -45,8 +51,8 @@
   color: #374151;
   font-size: 20px;
   font-weight: 700;
-  margin-left: auto;
   white-space: nowrap;
+  margin-left: auto;
 }
 
 .loadingText {

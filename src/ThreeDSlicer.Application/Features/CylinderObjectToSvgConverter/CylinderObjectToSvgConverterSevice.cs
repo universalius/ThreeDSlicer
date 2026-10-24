@@ -14,7 +14,7 @@ namespace ThreeDSlicer.Application.Features.CylinderObjectToSvgConverter;
 
 public class CylinderObjectToSvgConverterSevice(IOFileService fileService, ILogger<CylinderObjectToSvgConverterSevice> logger)
 {
-    public Point3d[] Convert(MeshObject meshObject, Axises cutPlane)
+    public Point3d[] Convert(MeshObject meshObject, Axises cutPlane, int? cutPlaneRelPos = null)
     {
         //var rect = new[] { new Point3d(1.0, 1.0, 1.0), new Point3d(1.0, 5.0, 1.0), new Point3d(4.0, 5.0, 1.0), new Point3d(4.0, 1.0, 1.0), new Point3d(1.0, 1.0, 1.0) };
         //var a = new Plane3d(rect[0], rect[1], rect[2]);
@@ -42,9 +42,9 @@ public class CylinderObjectToSvgConverterSevice(IOFileService fileService, ILogg
 
         var axisCutPlanes = new[]
         {
-            new { Axis = Axises.YZ, Plane = new Plane3d(boxCenter, new Vector3d(1.0, 0.0, 0.0))},
-            new { Axis = Axises.XZ, Plane = new Plane3d(boxCenter, new Vector3d(0.0, 1.0, 0.0))},
-            new { Axis = Axises.XY, Plane = new Plane3d(boxCenter, new Vector3d(0.0, 0.0, 1.0))},
+            new { Axis = Axises.YZ, Plane = new Plane3d(GetAxisCutPlaneCenter(meshObject.Size, Axises.YZ, cutPlaneRelPos, boxCenter), new Vector3d(1.0, 0.0, 0.0)) },
+            new { Axis = Axises.XZ, Plane = new Plane3d(GetAxisCutPlaneCenter(meshObject.Size, Axises.XZ, cutPlaneRelPos, boxCenter), new Vector3d(0.0, 1.0, 0.0)) },
+            new { Axis = Axises.XY, Plane = new Plane3d(GetAxisCutPlaneCenter(meshObject.Size, Axises.XY, cutPlaneRelPos, boxCenter), new Vector3d(0.0, 0.0, 1.0)) },
         };
 
         var facePlanes = meshObject.Faces
@@ -138,6 +138,33 @@ public class CylinderObjectToSvgConverterSevice(IOFileService fileService, ILogg
 
         return profileCurvePoints
             .Select(p => p.ChangeAxises(cutPlane)).ToArray();
+    }
+
+    private static Point3d GetAxisCutPlaneCenter(Extent size, Axises axis, int? relativePosition, Point3d defaultCenter)
+    {
+        if (relativePosition is null)
+        {
+            return defaultCenter;
+        }
+
+        var ratio = Math.Clamp(relativePosition.Value, 0, 100) / 100d;
+
+        return axis switch
+        {
+            Axises.YZ => new Point3d(
+                size.XMin + (size.XMax - size.XMin) * ratio,
+                defaultCenter.Y,
+                defaultCenter.Z),
+            Axises.XZ => new Point3d(
+                defaultCenter.X,
+                size.YMin + (size.YMax - size.YMin) * ratio,
+                defaultCenter.Z),
+            Axises.XY => new Point3d(
+                defaultCenter.X,
+                defaultCenter.Y,
+                size.ZMin + (size.ZMax - size.ZMin) * ratio),
+            _ => defaultCenter,
+        };
     }
 
     private IEnumerable<Point3d> GetCrossEdgePoints(IEnumerable<CrossEdge> crossEdges,
