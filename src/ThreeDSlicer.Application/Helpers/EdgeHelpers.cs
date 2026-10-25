@@ -51,7 +51,7 @@ public static class EdgeHelpers
     //}
 
 
-    public static bool IsAxisPlaneCuted(this Segment3d segment, Plane3d plane, Axises axis)
+    public static bool IsCutByOrthogonalPlane(this Segment3d segment, Plane3d plane, Axises axis)
     {
         var point = plane.Point;
         var p1 = segment.P1;

@@ -73,7 +73,7 @@ namespace ThreeDSlicer
         private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
             var meshObject = await _objToMeshConverter.Convert();
-            var profilePoints = _cylinderToSvgConverter.Convert(meshObject, Axises.YZ);
+            var profilePoints = _cylinderToSvgConverter.Convert(meshObject, Axises.XY);
 
             try
             {

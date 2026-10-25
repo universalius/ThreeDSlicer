@@ -14,25 +14,8 @@ namespace ThreeDSlicer.Application.Features.CylinderObjectToSvgConverter;
 
 public class CylinderObjectToSvgConverterSevice(IOFileService fileService, ILogger<CylinderObjectToSvgConverterSevice> logger)
 {
-    public Point3d[] Convert(MeshObject meshObject, Axises cutPlane, int? cutPlaneRelPos = null)
+    public Point3d[] Convert(MeshObject meshObject, Axises cutPlane, int? cutPlaneRelPos = 50)
     {
-        //var rect = new[] { new Point3d(1.0, 1.0, 1.0), new Point3d(1.0, 5.0, 1.0), new Point3d(4.0, 5.0, 1.0), new Point3d(4.0, 1.0, 1.0), new Point3d(1.0, 1.0, 1.0) };
-        //var a = new Plane3d(rect[0], rect[1], rect[2]);
-
-        //var b = new Plane3d(new Point3d(2.0, 0.0, 0.0), new Vector3d(1.0, 0.0, 0.0));
-
-        //var intersection = b.IntersectionWith(a) as Line3d;
-
-        //var crossPoints = rect.ToSegments()
-        //                .Select(e => intersection.IntersectionWith(e) as Point3d)
-        //                //.Where(p => p != null)
-        //                .ToArray();
-
-
-        //var triangle = new Triangle(rect[0], rect[1], rect[2]);
-        //b.IntersectionWith(triangle);
-
-        //return null;
         var size = meshObject.Size;
         var points = meshObject.Verts.Select(v => new { Id = v.Index, Point = new Point3d(v.X, v.Y, v.Z) }).ToArray();
         var boxCenter = new Point3d(
@@ -54,87 +37,118 @@ public class CylinderObjectToSvgConverterSevice(IOFileService fileService, ILogg
             .ToArray();
             var faceEdgePoints = f.VertexIndexList.Select(id => facePoints.First(p => p.Id == id).Point).ToArray();
 
-            var plane = new Triangle(faceEdgePoints[0], faceEdgePoints[1], faceEdgePoints[2]);
+            var plane = new Plane3d(faceEdgePoints[0], faceEdgePoints[1], faceEdgePoints[2]);
 
             //if (f.Id == 379)
             //{
             //    var a = 1;
             //}
 
-            return new { Face = f, Plane = plane, Edges = faceEdgePoints.ToSegments() };
+            return new { Face = f, Plane = plane, Edges = faceEdgePoints.ToSegments(), Points = faceEdgePoints };
         })
         .ToList();
 
-        var count = 0;
         var d = new List<object>();
         var acp = axisCutPlanes.FirstOrDefault(i => i.Axis == cutPlane);
-        //var axisCrossCurvePoints = axisCutPlanes.Select(acp =>
-        //{
         var crossCurveEdges = facePlanes.Select(fp =>
         {
-            var intersection = acp.Plane.IntersectionWith(fp.Plane);
-            if (intersection != null)
+            if (fp.Points.Length == 3)
             {
-                var targetEdges = fp.Edges.Where(e => e.IsAxisPlaneCuted(acp.Plane, acp.Axis)).ToArray();
-
-                var crossPoints = targetEdges
-                    .Select(e => acp.Plane.IntersectionWith(e.ToLine) as Point3d)
-                    .Where(p => p != null && IsInsideBox(p, size))
-                    .ToArray();
-
-                return new { FacePlane = fp, CrossPoints = crossPoints };
+                var a = boxCenter;
+                var b = acp.Plane.Point;
+                var intersection1 = acp.Plane.IntersectionWith(fp.Plane);
             }
 
-            return null;
+            if (fp.Face.Id == 1)
+            {
+                var a = fp.Points;
+                var b = acp.Plane.Point;
+            }
+
+            var targetEdges = fp.Edges.Where(e => e.IsCutByOrthogonalPlane(acp.Plane, acp.Axis)).ToArray();
+            if (targetEdges.Length == 0)
+            {
+                return null;
+            }
+
+            var crossPoints = targetEdges
+                .SelectMany<Segment3d, Point3d>(e =>
+                {
+                    var intersection = acp.Plane.IntersectionWith(e.ToLine);
+                    if (intersection is Line3d)
+                    {
+                        return [e.P1, e.P2];
+                    }
+
+                    return [intersection as Point3d];
+                })
+                .Where(p => p != null && IsInsideBox(p, size))
+                .GroupBy(p => (
+                    Math.Round(p.X, 6),
+                    Math.Round(p.Y, 6),
+                    Math.Round(p.Z, 6)))
+                .Select(g => g.First())
+                .ToArray();
+
+            if (crossPoints.Length == 1)
+            {
+                return null;
+            }
+
+            return new { FacePlane = fp, CrossPoints = crossPoints };
         })
         .Where(cp => cp != null)
         .ToArray();
 
-        //    return new { Axis = acp.Axis, CrossCurveEdges = crossCurveEdges };
-        //})
-        //.ToArray();
+        var svgDocument = SvgDocument.Create();
+        svgDocument.Units = "mm";
 
-        //var circleCurves = axisCrossCurvePoints.Select(i =>
-        //{
-        //    var isCircle = false;
-        //    if (i.CrossCurveEdges.Count() < 3)
-        //    {
-        //        return new { i.Axis, i.CrossCurveEdges, IsCircle = isCircle };
-        //    }
+        foreach (var item in crossCurveEdges)
+        {
+            var p1 = item.CrossPoints[0].ChangeAxises(cutPlane);
+            var p2 = item.CrossPoints[1].ChangeAxises(cutPlane);
 
-        //    Circle3d circle;
-        //    try
-        //    {
-        //        var points = i.CrossCurveEdges.SelectMany(cce => cce.CrossPoints).Distinct().ToArray();
-        //        circle = new Circle3d(points[0], points[1], points[2]);
-        //        var distancesToCenter = points.Select(p => p.DistanceTo(circle.Center) - circle.R).ToArray();
-        //        isCircle = distancesToCenter.All(d => d < 0.1);
-        //    }
-        //    catch (Exception ex)
-        //    {
+            var line = svgDocument.AddLine();
+            line.X1 = p1.X;
+            line.Y1 = p1.Y;
+            line.X2 = p2.X;
+            line.Y2 = p2.Y;
+            line.SetStyle("stroke-width", "1");
+            line.SetStyle("stroke", "red");
 
-        //    }
+            var midX = (p1.X + p2.X) / 2d;
+            var midY = (p1.Y + p2.Y) / 2d;
 
-        //    return new { i.Axis, i.CrossCurveEdges, IsCircle = isCircle };
-        //})
-        //.ToArray();
+            var faceText = svgDocument.AddText();
+            faceText.X = midX;
+            faceText.Y = midY;
+            faceText.FontSize = 2;
+            faceText.Fill = "black";
+            faceText.TextAnchor = SvgTextAnchor.Middle;
+            faceText.Text = item.FacePlane.Face.Id.ToString();
+        }
 
-        //var targetProfileCurve = circleCurves.FirstOrDefault(cc => !cc.IsCircle);
-        //var profileCurveEdges = targetProfileCurve.CrossCurveEdges
-        //    .Select(cce => new CrossEdge(cce.FacePlane.Face.Id, cce.CrossPoints.ToSegments(false)[0])).ToArray();
+        fileService.SaveSvg($"{cutPlane.ToString()}_cross_slice_lined_debug", svgDocument.Element.OuterXml);
 
-        var profileCurveEdges = crossCurveEdges.Select(cce => new CrossEdge(cce.FacePlane.Face.Id, cce.CrossPoints.ToSegments(false)[0])).ToArray();
+
+
+
+
+
+
+
+        var profileCurveEdges = crossCurveEdges.Select(cce => new CrossEdge(cce.FacePlane.Face.Id, cce.CrossPoints.ToSegments(false)[0], cce.FacePlane.Points)).ToArray();
         var profileCurvePoints = GetCrossEdgePoints(profileCurveEdges, profileCurveEdges[0], new List<Point3d>()).ToArray();
 
-        //var svgDocument = SvgDocument.Create();
-        //svgDocument.Units = "mm";
-        //var path = svgDocument.AddPath();
-        //path.D = profileCurvePoints.ToPathString(targetProfileCurve.Axis);
-        //path.SetStyle("stroke-width", "1");
-        //path.SetStyle("stroke", "red");
-        //path.SetStyle("fill", "none");
+        var svgDocument1 = SvgDocument.Create();
+        svgDocument1.Units = "mm";
+        var path = svgDocument1.AddPath();
+        path.D = profileCurvePoints.ToPathString(cutPlane);
+        path.SetStyle("stroke-width", "1");
+        path.SetStyle("stroke", "red");
+        path.SetStyle("fill", "none");
 
-        //fileService.SaveSvg($"{targetProfileCurve.Axis.ToString()}_cross_slice", svgDocument.Element.OuterXml);
+        fileService.SaveSvg($"{cutPlane.ToString()}_cross_slice", svgDocument1.Element.OuterXml);
 
         return profileCurvePoints
             .Select(p => p.ChangeAxises(cutPlane)).ToArray();
@@ -171,6 +185,9 @@ public class CylinderObjectToSvgConverterSevice(IOFileService fileService, ILogg
         CrossEdge targetCrossEdge,
         List<Point3d> profileCurvePoints)
     {
+        var c = crossEdges.Select(ce => ce.Edge).ToArray();
+
+
         var processedFaceIds = new List<int> { targetCrossEdge.FaceId };
         var targetEdge = targetCrossEdge.Edge;
 
@@ -183,8 +200,14 @@ public class CylinderObjectToSvgConverterSevice(IOFileService fileService, ILogg
             profileCurvePoints.Add(targetEdge.P2);
         }
 
+
         var itemsWithSameEdge = crossEdges.Where(pce => pce.FaceId != targetCrossEdge.FaceId &&
               pce.Edge == targetEdge).ToArray();
+
+        if (itemsWithSameEdge.Length > 0)
+        {
+            var a = 0;
+        }
 
         processedFaceIds.AddRange(itemsWithSameEdge.Select(i => i.FaceId).ToArray());
 
@@ -210,9 +233,14 @@ public class CylinderObjectToSvgConverterSevice(IOFileService fileService, ILogg
 
         if (nextEdge != null)
         {
+            if (PointEquals(nextEdge.Edge.P1, targetEdge.P2))
+            {
+                var d = 0;
+            }
+
             if (!PointEquals(nextEdge.Edge.P1, targetEdge.P2))
             {
-                nextEdge = new CrossEdge(nextEdge.FaceId, new Segment3d(nextEdge.Edge.P2, nextEdge.Edge.P1));
+                nextEdge = new CrossEdge(nextEdge.FaceId, new Segment3d(nextEdge.Edge.P2, nextEdge.Edge.P1), nextEdge.Points);
             }
 
             GetCrossEdgePoints(notProcessedCrossEdges, nextEdge, profileCurvePoints);
@@ -233,7 +261,7 @@ public class CylinderObjectToSvgConverterSevice(IOFileService fileService, ILogg
                point.Z >= box.ZMin && point.Z <= box.ZMax;
     }
 
-    private record CrossEdge(int FaceId, Segment3d Edge);
+    private record CrossEdge(int FaceId, Segment3d Edge, Point3d[] Points);
 }
 
 
