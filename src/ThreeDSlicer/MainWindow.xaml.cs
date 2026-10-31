@@ -1,33 +1,20 @@
+using GeometRi;
 using Microsoft.UI;
-using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Controls.Primitives;
-using Microsoft.UI.Xaml.Data;
-using Microsoft.UI.Xaml.Input;
-using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml.Navigation;
 using Microsoft.UI.Windowing;
+using Microsoft.UI.Xaml;
 using Microsoft.Web.WebView2.Core;
-using SvgLib;
-using WinRT.Interop;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Net.Http;
-using System.Runtime.InteropServices.WindowsRuntime;
-using System.Text.Json;
-using System.Threading.Tasks;
 using Newtonsoft.Json;
+using SvgLib;
+using System;
+using System.IO;
+using System.Net.Http;
+using ThreeDSlicer.Application.Enums;
 using ThreeDSlicer.Application.Features.CylinderObjectToSvgConverter;
 using ThreeDSlicer.Application.Features.ObjToMeshConverter;
-using Windows.Foundation;
-using Windows.Foundation.Collections;
 using ThreeDSlicer.Application.Helpers;
 using ThreeDSlicer.Application.Helpers.GeometryHelpers;
-using GeometRi;
-using ThreeDSlicer.Application.Enums;
 using ThreeDSlicer.Application.Models;
+using WinRT.Interop;
 
 
 // To learn more about WinUI, the WinUI project structure,
@@ -42,6 +29,9 @@ namespace ThreeDSlicer
     {
         private readonly ObjToMeshConverterService _objToMeshConverter;
         private readonly CylinderObjectToSvgConverterSevice _cylinderToSvgConverter;
+        private bool _rootLoaded;
+        private bool _startupMaximized;
+        private bool _startupLoadTriggered;
 
         public MainWindow(ObjToMeshConverterService objToMeshConverter, CylinderObjectToSvgConverterSevice cylinderToSvgConverter)
         {
@@ -53,11 +43,13 @@ namespace ThreeDSlicer
 
             if (appWindow is not null)
             {
+                appWindow.Changed += AppWindow_Changed;
                 appWindow.Show();
 
                 if (appWindow.Presenter is OverlappedPresenter overlappedPresenter)
                 {
                     overlappedPresenter.Maximize();
+                    _startupMaximized = overlappedPresenter.State == OverlappedPresenterState.Maximized;
                 }
             }
 
@@ -66,11 +58,45 @@ namespace ThreeDSlicer
 
             if (this.Content is FrameworkElement root)
             {
-                root.Loaded += MainWindow_Loaded;
+                root.Loaded += Root_Loaded;
+            }
+
+            TryLaunchMainWindowLoaded();
+        }
+
+        private void Root_Loaded(object sender, RoutedEventArgs e)
+        {
+            _rootLoaded = true;
+            TryLaunchMainWindowLoaded();
+        }
+
+        private void AppWindow_Changed(AppWindow sender, AppWindowChangedEventArgs args)
+        {
+            if (sender is null)
+            {
+                return;
+            }
+
+            if (sender.Presenter is OverlappedPresenter presenter &&
+                presenter.State == OverlappedPresenterState.Maximized)
+            {
+                _startupMaximized = true;
+                TryLaunchMainWindowLoaded();
             }
         }
 
-        private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
+        private void TryLaunchMainWindowLoaded()
+        {
+            if (_startupLoadTriggered || !_rootLoaded || !_startupMaximized)
+            {
+                return;
+            }
+
+            _startupLoadTriggered = true;
+            StartReactApp(this, new RoutedEventArgs());
+        }
+
+        private async void StartReactApp(object sender, RoutedEventArgs e)
         {
             var meshObject = await _objToMeshConverter.Convert();
             var profilePoints = _cylinderToSvgConverter.Convert(meshObject, Axises.XY);
@@ -143,14 +169,14 @@ namespace ThreeDSlicer
 
                             if (webViewMessage.Type == "app-ready")
                             {
-                                sendSvgToFrontend(core, profilePoints);
+                                SendSvgToFrontend(core, profilePoints);
                                 return;
                             }
 
                             if (webViewMessage.Type == "cross-section")
                             {
                                 var requestPoints = _cylinderToSvgConverter.Convert(meshObject, webViewMessage.Axis, webViewMessage.CutPosition);
-                                sendSvgToFrontend(core, requestPoints);
+                                SendSvgToFrontend(core, requestPoints);
                                 return;
                             }
                         };
@@ -167,7 +193,7 @@ namespace ThreeDSlicer
             }
         }
     
-        private void sendSvgToFrontend(CoreWebView2 core, Point3d[] points)
+        private void SendSvgToFrontend(CoreWebView2 core, Point3d[] points)
         {
             var svgDocument = BuildSvg(points);
 
