@@ -98,7 +98,7 @@ export default function App() {
               <div key={view} className={styles.modelViewRow}>
                 <div className={styles.modelViewLabel}>{label}</div>
                 <div className={styles.modelViewCanvas}>
-                  <ObjViewer view={view} objText={objContent} slicePosition={slicePosition} />
+                  <ObjViewer view={view} objText={objContent} axis={selectedAxis} slicePosition={slicePosition} />
                 </div>
               </div>
             ))}
