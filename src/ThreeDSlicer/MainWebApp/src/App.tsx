@@ -84,8 +84,8 @@ export default function App() {
 
         <input
           type="range"
-          min={0}
-          max={100}
+          min={1}
+          max={99}
           value={slicePosition}
           onChange={(event) => handleSliceChange(Number(event.target.value))}
           onMouseUp={handleSliceCommit}

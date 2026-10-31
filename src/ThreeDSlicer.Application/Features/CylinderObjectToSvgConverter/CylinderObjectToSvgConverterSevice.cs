@@ -1,7 +1,3 @@
-using ThreeDSlicer.Application.Enums;
-using ThreeDSlicer.Application.Features.IOFile;
-using ThreeDSlicer.Application.Features.ObjToMeshConverter;
-using ThreeDSlicer.Application.Helpers;
 using GeometRi;
 using Microsoft.Extensions.Logging;
 using ObjParser;
@@ -9,6 +5,11 @@ using SvgLib;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using ThreeDSlicer.Application.Enums;
+using ThreeDSlicer.Application.Features.IOFile;
+using ThreeDSlicer.Application.Features.ObjToMeshConverter;
+using ThreeDSlicer.Application.Helpers;
+using ThreeDSlicer.Application.Helpers.GeometryHelpers;
 
 namespace ThreeDSlicer.Application.Features.CylinderObjectToSvgConverter;
 
@@ -100,8 +101,15 @@ public class CylinderObjectToSvgConverterSevice(IOFileService fileService, ILogg
         .Where(cp => cp != null)
         .ToArray();
 
+        var bounds = crossCurveEdges.SelectMany(cce => cce.CrossPoints).ToArray().GetPolygonBounds();
+        var xMin = bounds.XMin > 0 ? bounds.XMin + 5 : bounds.XMin - 5;
+        var yMin = bounds.YMin > 0 ? bounds.YMin + 5 : bounds.YMin - 5;
+
         var svgDocument = SvgDocument.Create();
-        svgDocument.Units = "mm";
+        svgDocument.Units = "%";
+        svgDocument.ViewBox = new SvgViewBox(xMin, yMin, bounds.Width + 2 * 5, bounds.Height);
+        svgDocument.Width = 100;
+        svgDocument.Height = 100;
 
         foreach (var item in crossCurveEdges)
         {
@@ -130,15 +138,7 @@ public class CylinderObjectToSvgConverterSevice(IOFileService fileService, ILogg
 
         fileService.SaveSvg($"{cutPlane.ToString()}_cross_slice_lined_debug", svgDocument.Element.OuterXml);
 
-
-
-
-
-
-
-
-        var profileCurveEdges = crossCurveEdges.Select(cce => new CrossEdge(cce.FacePlane.Face.Id, cce.CrossPoints.ToSegments(false)[0], cce.FacePlane.Points)).ToArray();
-        var profileCurvePoints = GetCrossEdgePoints(profileCurveEdges, profileCurveEdges[0], new List<Point3d>()).ToArray();
+        var profileCurvePoints = GetOrderedLoop(crossCurveEdges.Select(ce => ce.CrossPoints.ToSegments(false)[0]).ToArray());
 
         var svgDocument1 = SvgDocument.Create();
         svgDocument1.Units = "mm";
@@ -181,74 +181,6 @@ public class CylinderObjectToSvgConverterSevice(IOFileService fileService, ILogg
         };
     }
 
-    private IEnumerable<Point3d> GetCrossEdgePoints(IEnumerable<CrossEdge> crossEdges,
-        CrossEdge targetCrossEdge,
-        List<Point3d> profileCurvePoints)
-    {
-        var c = crossEdges.Select(ce => ce.Edge).ToArray();
-
-
-        var processedFaceIds = new List<int> { targetCrossEdge.FaceId };
-        var targetEdge = targetCrossEdge.Edge;
-
-        if (profileCurvePoints.Count == 0)
-        {
-            profileCurvePoints.AddRange([targetEdge.P1, targetEdge.P2]);
-        }
-        else
-        {
-            profileCurvePoints.Add(targetEdge.P2);
-        }
-
-
-        var itemsWithSameEdge = crossEdges.Where(pce => pce.FaceId != targetCrossEdge.FaceId &&
-              pce.Edge == targetEdge).ToArray();
-
-        if (itemsWithSameEdge.Length > 0)
-        {
-            var a = 0;
-        }
-
-        processedFaceIds.AddRange(itemsWithSameEdge.Select(i => i.FaceId).ToArray());
-
-        var notProcessedCrossEdges = crossEdges
-            .Where(ce => !processedFaceIds.Contains(ce.FaceId))
-            .ToArray();
-
-        var nextEdge = notProcessedCrossEdges.FirstOrDefault(ce =>
-            PointEquals(ce.Edge.P1, targetEdge.P2) ||
-            PointEquals(ce.Edge.P2, targetEdge.P1) ||
-            PointEquals(ce.Edge.P1, targetEdge.P1) ||
-            PointEquals(ce.Edge.P2, targetEdge.P2)
-            );
-
-        //if (targetCrossEdge.FaceId == 508)
-        //{
-        //    var d = notProcessedCrossEdges.FirstOrDefault(i => i.FaceId == targetCrossEdge.FaceId + 1);
-        //    var a = PointEquals(d.Edge.P1, targetEdge.P2);
-        //    var b = PointEquals(d.Edge.P2, targetEdge.P1);
-        //    var c = PointEquals(d.Edge.P1, targetEdge.P1);
-        //    var e = PointEquals(d.Edge.P2, targetEdge.P2);
-        //}
-
-        if (nextEdge != null)
-        {
-            if (PointEquals(nextEdge.Edge.P1, targetEdge.P2))
-            {
-                var d = 0;
-            }
-
-            if (!PointEquals(nextEdge.Edge.P1, targetEdge.P2))
-            {
-                nextEdge = new CrossEdge(nextEdge.FaceId, new Segment3d(nextEdge.Edge.P2, nextEdge.Edge.P1), nextEdge.Points);
-            }
-
-            GetCrossEdgePoints(notProcessedCrossEdges, nextEdge, profileCurvePoints);
-        }
-
-        return profileCurvePoints.Distinct();
-    }
-
     private bool PointEquals(Point3d p1, Point3d p2)
     {
         return p1.DistanceTo(p2) <= 0.0001;
@@ -261,7 +193,75 @@ public class CylinderObjectToSvgConverterSevice(IOFileService fileService, ILogg
                point.Z >= box.ZMin && point.Z <= box.ZMax;
     }
 
+    private Point3d[] GetOrderedLoop(Segment3d[] lines)
+    {
+        if (lines == null || lines.Length == 0)
+            return [];
+
+        // Step 1: Build an adjacency map (Point -> Connected Neighbors)
+        var adjacency = new Dictionary<int, List<Point3d>>();
+
+        foreach (var line in lines)
+        {
+            var p1 = line.P1;
+            var p2 = line.P2;
+            var p1Hash = p1.GetHashCodeInTolerance();
+            var p2Hash = p2.GetHashCodeInTolerance();
+
+            if (!adjacency.ContainsKey(p1Hash))
+                adjacency[p1Hash] = new List<Point3d>();
+
+            if (!adjacency.ContainsKey(p2Hash))
+                adjacency[p2Hash] = new List<Point3d>();
+
+            var adjacencyP1 = adjacency[p1Hash];
+            if (!adjacencyP1.Any(p => PointEquals(p, p2)))
+            {
+                adjacency[p1Hash].Add(p2);
+            }
+
+            var adjacencyP2 = adjacency[p2Hash];
+            if (!adjacencyP2.Any(p => PointEquals(p, p1)))
+            {
+                adjacency[p2Hash].Add(p1);
+            }
+        }
+
+        // Step 2: Validate that every point has exactly 2 neighbors (closed loop property)
+        foreach (var kvp in adjacency)
+        {
+            if (kvp.Value.Count != 2)
+            {
+                throw new InvalidOperationException($"Point {kvp.Key} has {kvp.Value.Count} connections. A valid closed loop requires exactly 2 connections per point.");
+            }
+        }
+
+        // Step 3: Traverse the graph to order the points
+        var orderedPoints = new List<Point3d>();
+        Point3d startPoint = lines[0].P1;
+        Point3d current = startPoint;
+        Point3d previous = default;
+
+        // Find a valid starting neighbor
+        Point3d next = adjacency[current.GetHashCodeInTolerance()][0];
+
+        orderedPoints.Add(current);
+
+        while (!next.Equals(startPoint))
+        {
+            orderedPoints.Add(next);
+
+            // Get the two neighbors of the current point
+            var neighbors = adjacency[next.GetHashCodeInTolerance()];
+
+            // The next point is the neighbor we didn't just come from
+            Point3d temp = next;
+            next = neighbors[0].Equals(current) ? neighbors[1] : neighbors[0];
+            current = temp;
+        }
+
+        return orderedPoints.ToArray();
+    }
+
     private record CrossEdge(int FaceId, Segment3d Edge, Point3d[] Points);
 }
-
-

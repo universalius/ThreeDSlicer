@@ -1,4 +1,5 @@
 ﻿using GeometRi;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using ThreeDSlicer.Application.Enums;
@@ -25,6 +26,15 @@ public static class PointHelpers
         }
 
         return null;
+    }
+
+    public static int GetHashCodeInTolerance(this Point3d p)
+    {
+        var tolerance = 0.0001;
+        int ix = (int)Math.Round(p.X / tolerance);
+        int iy = (int)Math.Round(p.Y / tolerance);
+        int iz = (int)Math.Round(p.Z / tolerance);
+        return HashCode.Combine(ix, iy, iz);
     }
 
     //public static bool IsCutByOrthogonalPlane(this Segment3d segment, Plane3d plane, Axises axis)
