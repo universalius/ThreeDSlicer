@@ -22,6 +22,11 @@ public class IOFileService
         return await File.ReadAllLinesAsync(GetObjFilePath());
     }
 
+    public async Task<string> ReadObjFileContent()
+    {
+        return await File.ReadAllTextAsync(GetObjFilePath());
+    }
+
     public void SaveSvg(string fileName, string svg)
     {
         var resultsPath = GetResultsFolderPath();

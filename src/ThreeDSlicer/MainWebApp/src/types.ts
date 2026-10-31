@@ -4,11 +4,23 @@ export enum Axises {
   YZ,
 }
 
-export type WebViewMessage = {
-  type?: string
-  axis?: Axises
-  relativePosition?: number
+
+export type CrossSectionData = {
   svg?: string
+}
+
+export type ObjData = {
+  obj?: string
+}
+
+export type WebViewMessage<T> = {
+  type?: string,
+  data: T
+}
+
+export type WebViewResponse<T> = {
+  type?: string,
+  data: T
 }
 
 export type WebViewBridge = {

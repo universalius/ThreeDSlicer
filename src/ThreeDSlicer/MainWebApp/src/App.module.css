@@ -59,7 +59,16 @@
   color: #666;
 }
 
-.svgPanel {
+.viewerGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  flex: 1;
+  min-height: 420px;
+}
+
+.svgPanel,
+.modelPanel {
   background: #fff;
   border-radius: 12px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
@@ -67,16 +76,37 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  flex: 1;
   width: 100%;
   height: 100%;
   min-height: 420px;
   position: relative;
 }
 
+.modelPanel {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  padding: 12px;
+  box-sizing: border-box;
+}
+
+.panelTitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: #374151;
+  margin-bottom: 8px;
+  width: 100%;
+  text-align: left;
+}
+
 .svgPanel > * {
   width: 100%;
   height: 100%;
+}
+
+.modelPanel > *:last-child {
+  width: 100%;
+  flex: 1;
 }
 
 .svgViewport {

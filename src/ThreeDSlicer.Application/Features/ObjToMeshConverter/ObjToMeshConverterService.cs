@@ -38,6 +38,11 @@ public class ObjToMeshConverterService
         return meshObjects.First();
     }
 
+    public Task<string> GetObjFileContent()
+    {
+        return _file.ReadObjFileContent();
+    }
+
     private List<MeshObject> GetMeshObjects(Obj obj, List<int> firstFaceVetexIds, List<MeshObject> meshObjects)
     {
         var (objectFacesIds, objectVertsIds) = GetObjectFaces(obj,

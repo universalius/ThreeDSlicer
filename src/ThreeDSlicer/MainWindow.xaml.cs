@@ -153,7 +153,7 @@ namespace ThreeDSlicer
                             }
                         }
 
-                        core.WebMessageReceived += (sender, args) =>
+                        core.WebMessageReceived += async (sender, args) =>
                         {
                             var message = args.TryGetWebMessageAsString();
                             if (string.IsNullOrWhiteSpace(message))
@@ -169,7 +169,19 @@ namespace ThreeDSlicer
 
                             if (webViewMessage.Type == "app-ready")
                             {
-                                SendSvgToFrontend(core, profilePoints);
+                                var payload = new
+                                {
+                                    type = "app-ready",
+                                    data = new
+                                    {
+                                        obj = await _objToMeshConverter.GetObjFileContent()
+                                    },
+                                }
+                            ;
+
+                                var jsonPayload = JsonConvert.SerializeObject(payload);
+                                core.PostWebMessageAsJson(jsonPayload);
+
                                 return;
                             }
 
@@ -192,15 +204,18 @@ namespace ThreeDSlicer
                 // Initialization failed (WebView2 runtime may be missing)
             }
         }
-    
+
         private void SendSvgToFrontend(CoreWebView2 core, Point3d[] points)
         {
             var svgDocument = BuildSvg(points);
 
             var payload = new
             {
-                type = "svg-data",
-                svg = svgDocument.Element.OuterXml
+                type = "cross-section",
+                data = new
+                {
+                    svg = svgDocument.Element.OuterXml
+                }
             };
 
             var jsonPayload = JsonConvert.SerializeObject(payload);
