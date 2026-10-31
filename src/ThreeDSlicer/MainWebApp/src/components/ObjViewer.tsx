@@ -1,8 +1,28 @@
 import { Canvas, useLoader } from '@react-three/fiber'
 import { OrbitControls, OrthographicCamera } from '@react-three/drei'
 import { OBJLoader } from 'three-stdlib'
-import type { Group } from 'three'
+import { Box3, Vector3, type Group } from 'three'
 import { useMemo } from 'react'
+
+function getModelPlacement(object: Group) {
+    object.updateMatrixWorld(true)
+
+    const box = new Box3().setFromObject(object)
+    const size = box.getSize(new Vector3())
+    const center = box.getCenter(new Vector3())
+
+    const maxDimension = Math.max(size.x, size.y, size.z, 0.0001)
+    const targetVisibleSize = 4
+    const scale = targetVisibleSize / maxDimension
+
+    const position: [number, number, number] = [
+        -center.x * scale,
+        -center.y * scale,
+        -center.z * scale,
+    ]
+
+    return { scale, position }
+}
 
 function ModelFromText({ objText }: { objText: string }) {
     const object = useMemo(() => {
@@ -10,17 +30,16 @@ function ModelFromText({ objText }: { objText: string }) {
         return loader.parse(objText) as Group
     }, [objText])
 
-    console.log('Parsed OBJ object:', objText) // Log the parsed object for debugging
+    const { scale, position } = useMemo(() => getModelPlacement(object), [object])
 
-    return <primitive object={object} scale={0.001} position={[0, 0, 0]} />
+    return <primitive object={object} scale={scale} position={position} />
 }
 
 function ModelFromUrl({ url }: { url: string }) {
-    console.log('Loading OBJ from URL:', url) // Log the URL for debugging
-
     const object = useLoader(OBJLoader, url) as Group
+    const { scale, position } = useMemo(() => getModelPlacement(object), [object])
 
-    return <primitive object={object} scale={0.9} position={[0, -0.5, 0]} />
+    return <primitive object={object} scale={scale} position={position} />
 }
 
 type ViewName = 'front' | 'left' | 'top'
