@@ -74,14 +74,14 @@ export function ObjViewer({
     const cameraPosition = cameraPositions[view]
 
     return (
-        <div style={{ width: '100%', height: '100%', minHeight: 420 }}>
+        <div style={{ width: '100%', height: '100%', minHeight: 250 }}>
             <Canvas>
                 <color attach="background" args={['#f8fafc']} />
 
                 <OrthographicCamera
                     makeDefault
                     position={cameraPosition}
-                    zoom={80}
+                    zoom={55}
                     near={0.1}
                     far={1000}
                 />

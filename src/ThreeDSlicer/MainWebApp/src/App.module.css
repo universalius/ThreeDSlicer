@@ -61,10 +61,19 @@
 
 .viewerGrid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: auto minmax(0, 1fr);
   gap: 16px;
   flex: 1;
   min-height: 420px;
+  align-items: start;
+}
+
+.crossSectionColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  min-width: 0;
 }
 
 .svgPanel,
@@ -77,7 +86,6 @@
   justify-content: center;
   align-items: center;
   width: 100%;
-  height: 100%;
   min-height: 420px;
   position: relative;
 }
@@ -88,6 +96,10 @@
   justify-content: flex-start;
   padding: 12px;
   box-sizing: border-box;
+  width: fit-content;
+  min-width: 0;
+  height: 100%;
+  max-width: 100%;
 }
 
 .panelTitle {
@@ -97,6 +109,52 @@
   margin-bottom: 8px;
   width: 100%;
   text-align: left;
+}
+
+.modelViewStack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  max-width: 250px;
+  height: 100%;
+  min-height: 0;
+  margin: 0 auto;
+  flex: 1;
+}
+
+.modelViewRow {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
+  min-height: 0;
+  width: 100%;
+  max-width: 250px;
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  overflow: hidden;
+  margin: 0 auto;
+}
+
+.modelViewLabel {
+  background: #f1f5f9;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 6px 10px;
+}
+
+.modelViewCanvas {
+  flex: 1;
+  min-height: 120px;
+}
+
+.modelViewCanvas > * {
+  width: 100%;
+  height: 100%;
 }
 
 .svgPanel > * {

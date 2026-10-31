@@ -82,49 +82,66 @@ export default function App() {
     { label: 'Top', axis: Axises.XZ },
   ]
   const selectedViewLabel = axisOptions.find(({ axis }) => axis === selectedAxis)?.label ?? 'Front'
+  const modelViews = [
+    { label: 'Front', view: 'front' as const },
+    { label: 'Top', view: 'top' as const },
+    { label: 'Left', view: 'left' as const },
+  ]
 
   return (
     <div className={styles.appShell}>
-      <div className={styles.buttonRow}>
-        <div className={styles.buttonGroup}>
-          {axisOptions.map(({ label, axis }) => (
-            <button
-              key={label}
-              type="button"
-              className={selectedAxis === axis ? `${styles.axisButton} ${styles.axisButtonSelected}` : styles.axisButton}
-              onClick={() => handleAxisButtonClick(axis)}
-            >
-              {label}
-            </button>
-          ))}
+      <div className={styles.viewerGrid}>
+        <div className={styles.modelPanel}>
+          <h2 className={styles.panelTitle}>3D View</h2>
+          <div className={styles.modelViewStack}>
+            {modelViews.map(({ label, view }) => (
+              <div key={view} className={styles.modelViewRow}>
+                <div className={styles.modelViewLabel}>{label}</div>
+                <div className={styles.modelViewCanvas}>
+                  <ObjViewer view={view} objText={objContent} />
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
 
-        <input
-          type="range"
-          min={1}
-          max={99}
-          value={slicePosition}
-          onChange={(event) => handleSliceChange(Number(event.target.value))}
-          onMouseUp={handleSliceCommit}
-          className={styles.sliceSlider}
-          aria-label="Slice position"
-        />
+        <div className={styles.crossSectionColumn}>
+          <h2>Cross section</h2>
+          <div className={styles.buttonRow}>
+            <div className={styles.buttonGroup}>
+              {axisOptions.map(({ label, axis }) => (
+                <button
+                  key={label}
+                  type="button"
+                  className={selectedAxis === axis ? `${styles.axisButton} ${styles.axisButtonSelected}` : styles.axisButton}
+                  onClick={() => handleAxisButtonClick(axis)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
 
-        <div className={styles.selectedText}>View: {selectedViewLabel}</div>
-      </div>
+            <input
+              type="range"
+              min={1}
+              max={99}
+              value={slicePosition}
+              onChange={(event) => handleSliceChange(Number(event.target.value))}
+              onMouseUp={handleSliceCommit}
+              className={styles.sliceSlider}
+              aria-label="Slice position"
+            />
 
-      <div className={styles.viewerGrid}>
-        {!svgMarkup ? (
-          <div className={styles.loadingText}>Waiting for SVG data…</div>
-        ) : (
-          <div className={styles.svgPanel}>
-            <SvgRenderer svgMarkup={svgMarkup} />
+            <div className={styles.selectedText}>View: {selectedViewLabel}</div>
           </div>
-        )}
 
-        <div className={styles.modelPanel}>
-          <div className={styles.panelTitle}>3D OBJ View</div>
-          <ObjViewer view={selectedView} objText={objContent} />
+          {!svgMarkup ? (
+            <div className={styles.loadingText}>Waiting for SVG data…</div>
+          ) : (
+            <div className={styles.svgPanel}>
+              <SvgRenderer svgMarkup={svgMarkup} />
+            </div>
+          )}
         </div>
       </div>
     </div>
