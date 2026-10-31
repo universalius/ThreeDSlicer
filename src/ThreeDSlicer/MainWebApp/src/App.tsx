@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { SvgRenderer } from './components/SvgRenderer'
-import { ObjViewer } from './components/ObjViewer'
+import { ObjViewer } from './components/ObjViewer/ObjViewer'
 import styles from './App.module.css'
 import { Axises } from './types'
 import type { WebViewMessage, WebViewBridge, WebViewResponse, CrossSectionData, ObjData } from './types'
@@ -98,7 +98,7 @@ export default function App() {
               <div key={view} className={styles.modelViewRow}>
                 <div className={styles.modelViewLabel}>{label}</div>
                 <div className={styles.modelViewCanvas}>
-                  <ObjViewer view={view} objText={objContent} />
+                  <ObjViewer view={view} objText={objContent} slicePosition={slicePosition} />
                 </div>
               </div>
             ))}
