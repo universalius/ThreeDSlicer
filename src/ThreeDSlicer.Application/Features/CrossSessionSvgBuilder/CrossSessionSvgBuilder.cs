@@ -1,5 +1,6 @@
 using GeometRi;
 using SvgLib;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using ThreeDSlicer.Application.Helpers;
@@ -11,8 +12,6 @@ namespace ThreeDSlicer.Application.Features.CrossSessionSvgBuilder;
 
 public class CrossSessionSvgBuilder
 {
-
-
     public SvgDocument BuildSvg(MeshLoops[] meshes)
     {
         var svgDocument = SvgDocument.Create();
@@ -24,6 +23,7 @@ public class CrossSessionSvgBuilder
         var index = 1;
         meshes.ToList().ForEach(m =>
         {
+            var color = GetColor(index - 1);
             var defs = svgDocument.AddDefs();
             var pattern = defs.AddPattern();
             pattern.Id = $"hatch-45-{index}";
@@ -36,11 +36,11 @@ public class CrossSessionSvgBuilder
             line.Y1 = 0;
             line.X2 = 20;
             line.Y2 = 20;
-            line.SetStyle("stroke", "red");
+            line.SetStyle("stroke", color);
             line.SetStyle("stroke-width", "0.5");
             line.SetStyle("stroke-linecap", "square");
 
-            var meshBounds = AddPathes(svgDocument, m, "red", index);
+            var meshBounds = AddPathes(svgDocument, m, color, index);
             allBounds.Add(meshBounds);
             index++;
         });
@@ -85,5 +85,44 @@ public class CrossSessionSvgBuilder
         path.SetStyle("stroke-width", "1");
         path.SetStyle("stroke", color);
         path.SetStyle("fill", $"url(#hatch-45-{hatchId})");
+    }
+
+    private readonly string[] StandardColors =
+    {
+        "red",
+        "green",
+        "blue",
+        "orange",
+        "purple",
+        "cyan",
+        "magenta",
+        "brown",
+        "gray",
+        "gold"
+    };
+
+    private string GetColor(int index)
+    {
+        if (index < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(index), "Index cannot be negative.");
+        }
+
+        if (index < StandardColors.Length)
+        {
+            return StandardColors[index];
+        }
+
+        return GetHashColor(index);
+    }
+
+    private static string GetHashColor(int index)
+    {
+        var hash = (uint)(index * 1103515245u + 12345u);
+        var r = (byte)((hash >> 16) & 0xFF);
+        var g = (byte)((hash >> 8) & 0xFF);
+        var b = (byte)(hash & 0xFF);
+
+        return $"#{r:X2}{g:X2}{b:X2}";
     }
 }
