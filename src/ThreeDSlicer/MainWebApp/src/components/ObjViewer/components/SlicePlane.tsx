@@ -1,9 +1,9 @@
-import { memo } from 'react'
-import { DoubleSide, Vector2, Vector3 } from 'three'
-import { Axises } from '../../../types'
-import type { useModelObject } from '../useModelObject'
+import { memo } from 'react';
+import { DoubleSide, Vector2, Vector3 } from 'three';
+import { Axises } from '../../../types';
+import type { useModelObject } from '../useModelObject';
 
-export type ViewName = 'front' | 'left' | 'top'
+export type ViewName = 'front' | 'left' | 'top';
 
 export const getAxisSlicePlaneMap = (modelSize: Vector3) => ({
   [Axises.XY]: {
@@ -24,7 +24,7 @@ export const getAxisSlicePlaneMap = (modelSize: Vector3) => ({
     top: { rotation: [0, Math.PI / 2, Math.PI / 2] as [number, number, number], extent: modelSize.y },
     left: { rotation: [0, Math.PI / 2, 0] as [number, number, number], extent: modelSize.y },
   },
-})
+});
 
 export const SlicePlane = memo(function SlicePlane({
   view,
@@ -32,39 +32,39 @@ export const SlicePlane = memo(function SlicePlane({
   model,
   axis,
 }: {
-  view: ViewName
-  axis: Axises
-  slicePosition: number
-  model: ReturnType<typeof useModelObject>
+  view: ViewName;
+  axis: Axises;
+  slicePosition: number;
+  model: ReturnType<typeof useModelObject>;
 }) {
-  const { size: modelSize, scale: modelScale } = model
-  const axisPlane = getAxisSlicePlaneMap(modelSize)[axis]
-  const axisPlaneView = axisPlane[view]
-  const axisExtent = axisPlaneView.extent
-  const offset = ((slicePosition - 50) / 50) * (axisExtent / 2) * modelScale
+  const { size: modelSize, scale: modelScale } = model;
+  const axisPlane = getAxisSlicePlaneMap(modelSize)[axis];
+  const axisPlaneView = axisPlane[view];
+  const axisExtent = axisPlaneView.extent;
+  const offset = ((slicePosition - 50) / 50) * (axisExtent / 2) * modelScale;
 
   const planeSize: Record<ViewName, Vector2> = {
     front: new Vector2(modelSize.x, modelSize.y),
     top: new Vector2(modelSize.x, modelSize.y),
     left: new Vector2(modelSize.z, modelSize.y),
-  }
+  };
 
-  const position = new Vector3(0, 0, 0)
+  const position = new Vector3(0, 0, 0);
 
   switch (axisPlane.offsetAxis) {
     case 'x':
-      position.x = offset
-      break
+      position.x = offset;
+      break;
     case 'y':
-      position.y = offset
-      break
+      position.y = offset;
+      break;
     case 'z':
-      position.z = offset
-      break
+      position.z = offset;
+      break;
   }
 
-  const size = planeSize[view]
-  const rotation = axisPlaneView.rotation
+  const size = planeSize[view];
+  const rotation = axisPlaneView.rotation;
 
   return (
     <mesh position={position} rotation={rotation} scale={modelScale} renderOrder={10}>
@@ -78,5 +78,5 @@ export const SlicePlane = memo(function SlicePlane({
         depthWrite={false}
       />
     </mesh>
-  )
-})
+  );
+});
