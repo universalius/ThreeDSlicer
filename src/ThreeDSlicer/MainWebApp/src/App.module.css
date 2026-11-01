@@ -16,6 +16,21 @@
   margin-bottom: 16px;
 }
 
+.controlsRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  margin-bottom: 16px;
+}
+
+.sliderRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
 .buttonGroup {
   display: flex;
   gap: 12px;
@@ -53,6 +68,13 @@
   font-weight: 700;
   white-space: nowrap;
   margin-left: auto;
+}
+
+.sliceValue {
+  color: #374151;
+  font-size: 20px;
+  font-weight: 700;
+  white-space: nowrap;
 }
 
 .loadingText {

@@ -108,7 +108,7 @@ export default function App() {
 
         <div className={styles.crossSectionColumn}>
           <h2>Cross section</h2>
-          <div className={styles.buttonRow}>
+          <div className={styles.controlsRow}>
             <div className={styles.buttonGroup}>
               {axisOptions.map(({ label, axis }) => (
                 <button
@@ -122,16 +122,19 @@ export default function App() {
               ))}
             </div>
 
-            <input
-              type="range"
-              min={1}
-              max={99}
-              value={slicePosition}
-              onChange={(event) => handleSliceChange(Number(event.target.value))}
-              onMouseUp={handleSliceCommit}
-              className={styles.sliceSlider}
-              aria-label="Slice position"
-            />
+            <div className={styles.sliderRow}>
+              <input
+                type="range"
+                min={1}
+                max={99}
+                value={slicePosition}
+                onChange={(event) => handleSliceChange(Number(event.target.value))}
+                onMouseUp={handleSliceCommit}
+                className={styles.sliceSlider}
+                aria-label="Slice position"
+              />
+              <div className={styles.sliceValue}>Slice: {slicePosition}</div>
+            </div>
 
             <div className={styles.selectedText}>View: {selectedViewLabel}</div>
           </div>
