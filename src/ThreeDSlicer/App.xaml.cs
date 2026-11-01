@@ -17,6 +17,7 @@ using Windows.Foundation.Collections;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using ThreeDSlicer.Application.Features.CrossSessionSvgBuilder;
 using ThreeDSlicer.Application.Features.ObjToMeshConverter;
 using ThreeDSlicer.Application.Features.CylinderObjectToSvgConverter;
 
@@ -55,6 +56,7 @@ namespace ThreeDSlicer
                     // Register features from ThreeDSlicer.Application using the host configuration
                     services.AddObjToMeshConverterFeature(context.Configuration);
                     services.AddCylinderObjectToSvgConverterFeature(context.Configuration);
+                    services.AddCrossSessionSvgBuilderFeature(context.Configuration);
                 })
                 .Build();
 
@@ -84,7 +86,8 @@ namespace ThreeDSlicer
             // Resolve feature services from the host and inject into the MainWindow
             var objConverter = Services.GetRequiredService<ObjToMeshConverterService>();
             var objectConverter = Services.GetRequiredService<CylinderObjectToSvgConverterSevice>();
-            _window = new MainWindow(objConverter, objectConverter);
+            var crossSessionSvgBuilder = Services.GetRequiredService<CrossSessionSvgBuilder>();
+            _window = new MainWindow(objConverter, objectConverter, crossSessionSvgBuilder);
 
             // Stop the host when the main window is closed to ensure graceful shutdown
             _window.Closed += async (s, e) =>

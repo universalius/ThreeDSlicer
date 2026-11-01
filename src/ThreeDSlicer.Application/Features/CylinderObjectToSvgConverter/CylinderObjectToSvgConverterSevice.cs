@@ -18,7 +18,7 @@ namespace ThreeDSlicer.Application.Features.CylinderObjectToSvgConverter;
 
 public class CylinderObjectToSvgConverterSevice(IOFileService fileService, ILogger<CylinderObjectToSvgConverterSevice> logger)
 {
-    public Point3d[] Convert(MeshObject meshObject, Axises cutPlane, int? cutPlaneRelPos = 50)
+    public MeshLoops Convert(MeshObject meshObject, Axises cutPlane, int? cutPlaneRelPos = 50)
     {
         var size = meshObject.Size;
         var points = meshObject.Verts.Select(v => new MeshVertex(v.Index, new Point3d(v.X, v.Y, v.Z))).ToArray();
@@ -90,20 +90,25 @@ public class CylinderObjectToSvgConverterSevice(IOFileService fileService, ILogg
 
         DebugCrossSection(cutPlane, crossCurveEdges, bounds, xMin, yMin);
 
-        var profileCurvePoints = GetOrderedLoop(crossCurveEdges.Select(ce => ce.CrossPoints.ToSegments(false)[0]).ToArray());
+        var loops = GetLoops(crossCurveEdges.Select(ce => ce.CrossPoints.ToSegments(false)[0]).ToArray());
+        var index = 0;
+        loops.ForEach(loop =>
+        {
+            index++;
 
-        var svgDocument1 = SvgDocument.Create();
-        svgDocument1.Units = "mm";
-        var path = svgDocument1.AddPath();
-        path.D = profileCurvePoints.ToPathString(cutPlane);
-        path.SetStyle("stroke-width", "1");
-        path.SetStyle("stroke", "red");
-        path.SetStyle("fill", "none");
+            var svgDocument = SvgDocument.Create();
+            svgDocument.Units = "mm";
+            var path = svgDocument.AddPath();
+            path.D = loop.ToPathString(cutPlane);
+            path.SetStyle("stroke-width", "1");
+            path.SetStyle("stroke", "red");
+            path.SetStyle("fill", "none");
 
-        fileService.SaveSvg($"{cutPlane.ToString()}_cross_slice", svgDocument1.Element.OuterXml);
+            fileService.SaveSvg($"{cutPlane.ToString()}_cross_slice_{index}", svgDocument.Element.OuterXml);
+        });
 
-        return profileCurvePoints
-            .Select(p => p.ChangeAxises(cutPlane)).ToArray();
+        return new MeshLoops(
+            Mains: loops.Select(l => l.Select(p => p.ChangeAxises(cutPlane)).ToArray()));
     }
 
     private void DebugCrossSection(Axises cutPlane, CrossSection[] crossCurveEdges, PolygonBounds bounds, double xMin, double yMin)
@@ -181,7 +186,7 @@ public class CylinderObjectToSvgConverterSevice(IOFileService fileService, ILogg
                point.Z >= box.ZMin && point.Z <= box.ZMax;
     }
 
-    private Point3d[] GetOrderedLoop(Segment3d[] lines)
+    private List<Point3d[]> GetLoops(Segment3d[] lines)
     {
         if (lines == null || lines.Length == 0)
             return [];
@@ -225,13 +230,44 @@ public class CylinderObjectToSvgConverterSevice(IOFileService fileService, ILogg
         }
 
         // Step 3: Traverse the graph to order the points
+        var remainingAdjacency = new Dictionary<int, List<Point3d>>(adjacency);
+        var curves = new List<Point3d[]>();
 
+        while (remainingAdjacency.Count > 0)
+        {
+            var curvePoints = GetLoopPoints(remainingAdjacency);
+            curves.Add(curvePoints);
+
+            if (curvePoints.Length == remainingAdjacency.Count)
+            {
+                break;
+            }
+
+            var processedKeys = curvePoints
+                .Select(p => p.GetHashCodeInTolerance())
+                .ToHashSet();
+
+            var notProcessedKeys = remainingAdjacency
+                .Keys
+                .Where(k => !processedKeys.Contains(k))
+                .ToArray();
+
+            if (notProcessedKeys.Length == 0)
+            {
+                break;
+            }
+
+            remainingAdjacency = notProcessedKeys
+                .ToDictionary(k => k, k => remainingAdjacency[k]);
+        }
+
+        return curves;
     }
 
-    private Point3d[] GetCurvePoints(Segment3d[] lines, Dictionary<int, List<Point3d>> adjacency)
+    private Point3d[] GetLoopPoints(Dictionary<int, List<Point3d>> adjacency)
     {
         var orderedPoints = new List<Point3d>();
-        Point3d startPoint = lines[0].P1;
+        Point3d startPoint = adjacency.First().Value.First();
         Point3d current = startPoint;
         Point3d previous = default;
 
@@ -269,5 +305,5 @@ public class CylinderObjectToSvgConverterSevice(IOFileService fileService, ILogg
 
     private record CrossEdge(int FaceId, Segment3d Edge, Point3d[] Points);
 
-    private record MeshSvgs(IEnumerable<Point3d[]> mainSvgs, IEnumerable<Point3d[]> holeSvgs = null);
+    public record MeshLoops(IEnumerable<Point3d[]> Mains, IEnumerable<Point3d[]> Holes = null);
 }
