@@ -1,5 +1,6 @@
 using GeometRi;
 using Microsoft.Extensions.Logging;
+using Microsoft.UI.Xaml.Controls;
 using ObjParser;
 using ObjParser.Types;
 using SvgLib;
@@ -224,6 +225,11 @@ public class CylinderObjectToSvgConverterSevice(IOFileService fileService, ILogg
         }
 
         // Step 3: Traverse the graph to order the points
+
+    }
+
+    private Point3d[] GetCurvePoints(Segment3d[] lines, Dictionary<int, List<Point3d>> adjacency)
+    {
         var orderedPoints = new List<Point3d>();
         Point3d startPoint = lines[0].P1;
         Point3d current = startPoint;
@@ -249,6 +255,9 @@ public class CylinderObjectToSvgConverterSevice(IOFileService fileService, ILogg
 
         return orderedPoints.ToArray();
     }
+
+
+
 
     private record MeshVertex(int Id, Point3d Point);
 
