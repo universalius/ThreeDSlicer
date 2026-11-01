@@ -1,6 +1,7 @@
 using GeometRi;
 using Microsoft.Extensions.Logging;
 using ObjParser;
+using ObjParser.Types;
 using SvgLib;
 using System;
 using System.Collections.Generic;
@@ -10,6 +11,7 @@ using ThreeDSlicer.Application.Features.IOFile;
 using ThreeDSlicer.Application.Features.ObjToMeshConverter;
 using ThreeDSlicer.Application.Helpers;
 using ThreeDSlicer.Application.Helpers.GeometryHelpers;
+using ThreeDSlicer.Application.Helpers.GeometryHelpers.Models;
 
 namespace ThreeDSlicer.Application.Features.CylinderObjectToSvgConverter;
 
@@ -18,7 +20,7 @@ public class CylinderObjectToSvgConverterSevice(IOFileService fileService, ILogg
     public Point3d[] Convert(MeshObject meshObject, Axises cutPlane, int? cutPlaneRelPos = 50)
     {
         var size = meshObject.Size;
-        var points = meshObject.Verts.Select(v => new { Id = v.Index, Point = new Point3d(v.X, v.Y, v.Z) }).ToArray();
+        var points = meshObject.Verts.Select(v => new MeshVertex(v.Index, new Point3d(v.X, v.Y, v.Z))).ToArray();
         var boxCenter = new Point3d(
             meshObject.Size.XMin + (meshObject.Size.XMax - meshObject.Size.XMin) / 2,
             meshObject.Size.YMin + (meshObject.Size.YMax - meshObject.Size.YMin) / 2,
@@ -26,9 +28,9 @@ public class CylinderObjectToSvgConverterSevice(IOFileService fileService, ILogg
 
         var axisCutPlanes = new[]
         {
-            new { Axis = Axises.YZ, Plane = new Plane3d(GetAxisCutPlaneCenter(meshObject.Size, Axises.YZ, cutPlaneRelPos, boxCenter), new Vector3d(1.0, 0.0, 0.0)) },
-            new { Axis = Axises.XZ, Plane = new Plane3d(GetAxisCutPlaneCenter(meshObject.Size, Axises.XZ, cutPlaneRelPos, boxCenter), new Vector3d(0.0, 1.0, 0.0)) },
-            new { Axis = Axises.XY, Plane = new Plane3d(GetAxisCutPlaneCenter(meshObject.Size, Axises.XY, cutPlaneRelPos, boxCenter), new Vector3d(0.0, 0.0, 1.0)) },
+            new AxisCutPlane(Axises.YZ, new Plane3d(GetAxisCutPlaneCenter(meshObject.Size, Axises.YZ, cutPlaneRelPos, boxCenter), new Vector3d(1.0, 0.0, 0.0))),
+            new AxisCutPlane(Axises.XZ, new Plane3d(GetAxisCutPlaneCenter(meshObject.Size, Axises.XZ, cutPlaneRelPos, boxCenter), new Vector3d(0.0, 1.0, 0.0))),
+            new AxisCutPlane(Axises.XY, new Plane3d(GetAxisCutPlaneCenter(meshObject.Size, Axises.XY, cutPlaneRelPos, boxCenter), new Vector3d(0.0, 0.0, 1.0))),
         };
 
         var facePlanes = meshObject.Faces
@@ -37,35 +39,15 @@ public class CylinderObjectToSvgConverterSevice(IOFileService fileService, ILogg
             var facePoints = points.Where(p => f.VertexIndexList.Contains(p.Id))
             .ToArray();
             var faceEdgePoints = f.VertexIndexList.Select(id => facePoints.First(p => p.Id == id).Point).ToArray();
-
             var plane = new Plane3d(faceEdgePoints[0], faceEdgePoints[1], faceEdgePoints[2]);
 
-            //if (f.Id == 379)
-            //{
-            //    var a = 1;
-            //}
-
-            return new { Face = f, Plane = plane, Edges = faceEdgePoints.ToSegments(), Points = faceEdgePoints };
+            return new FaceSection(f, plane, faceEdgePoints.ToSegments(), faceEdgePoints);
         })
         .ToList();
 
-        var d = new List<object>();
         var acp = axisCutPlanes.FirstOrDefault(i => i.Axis == cutPlane);
         var crossCurveEdges = facePlanes.Select(fp =>
         {
-            if (fp.Points.Length == 3)
-            {
-                var a = boxCenter;
-                var b = acp.Plane.Point;
-                var intersection1 = acp.Plane.IntersectionWith(fp.Plane);
-            }
-
-            if (fp.Face.Id == 1)
-            {
-                var a = fp.Points;
-                var b = acp.Plane.Point;
-            }
-
             var targetEdges = fp.Edges.Where(e => e.IsCutByOrthogonalPlane(acp.Plane, acp.Axis)).ToArray();
             if (targetEdges.Length == 0)
             {
@@ -96,7 +78,7 @@ public class CylinderObjectToSvgConverterSevice(IOFileService fileService, ILogg
                 return null;
             }
 
-            return new { FacePlane = fp, CrossPoints = crossPoints };
+            return new CrossSection(fp, crossPoints);
         })
         .Where(cp => cp != null)
         .ToArray();
@@ -105,6 +87,26 @@ public class CylinderObjectToSvgConverterSevice(IOFileService fileService, ILogg
         var xMin = bounds.XMin > 0 ? bounds.XMin + 5 : bounds.XMin - 5;
         var yMin = bounds.YMin > 0 ? bounds.YMin + 5 : bounds.YMin - 5;
 
+        DebugCrossSection(cutPlane, crossCurveEdges, bounds, xMin, yMin);
+
+        var profileCurvePoints = GetOrderedLoop(crossCurveEdges.Select(ce => ce.CrossPoints.ToSegments(false)[0]).ToArray());
+
+        var svgDocument1 = SvgDocument.Create();
+        svgDocument1.Units = "mm";
+        var path = svgDocument1.AddPath();
+        path.D = profileCurvePoints.ToPathString(cutPlane);
+        path.SetStyle("stroke-width", "1");
+        path.SetStyle("stroke", "red");
+        path.SetStyle("fill", "none");
+
+        fileService.SaveSvg($"{cutPlane.ToString()}_cross_slice", svgDocument1.Element.OuterXml);
+
+        return profileCurvePoints
+            .Select(p => p.ChangeAxises(cutPlane)).ToArray();
+    }
+
+    private void DebugCrossSection(Axises cutPlane, CrossSection[] crossCurveEdges, PolygonBounds bounds, double xMin, double yMin)
+    {
         var svgDocument = SvgDocument.Create();
         svgDocument.Units = "%";
         svgDocument.ViewBox = new SvgViewBox(xMin, yMin, bounds.Width + 2 * 5, bounds.Height);
@@ -137,21 +139,6 @@ public class CylinderObjectToSvgConverterSevice(IOFileService fileService, ILogg
         }
 
         fileService.SaveSvg($"{cutPlane.ToString()}_cross_slice_lined_debug", svgDocument.Element.OuterXml);
-
-        var profileCurvePoints = GetOrderedLoop(crossCurveEdges.Select(ce => ce.CrossPoints.ToSegments(false)[0]).ToArray());
-
-        var svgDocument1 = SvgDocument.Create();
-        svgDocument1.Units = "mm";
-        var path = svgDocument1.AddPath();
-        path.D = profileCurvePoints.ToPathString(cutPlane);
-        path.SetStyle("stroke-width", "1");
-        path.SetStyle("stroke", "red");
-        path.SetStyle("fill", "none");
-
-        fileService.SaveSvg($"{cutPlane.ToString()}_cross_slice", svgDocument1.Element.OuterXml);
-
-        return profileCurvePoints
-            .Select(p => p.ChangeAxises(cutPlane)).ToArray();
     }
 
     private static Point3d GetAxisCutPlaneCenter(Extent size, Axises axis, int? relativePosition, Point3d defaultCenter)
@@ -263,5 +250,15 @@ public class CylinderObjectToSvgConverterSevice(IOFileService fileService, ILogg
         return orderedPoints.ToArray();
     }
 
+    private record MeshVertex(int Id, Point3d Point);
+
+    private record AxisCutPlane(Axises Axis, Plane3d Plane);
+
+    private record FaceSection(Face Face, Plane3d Plane, Segment3d[] Edges, Point3d[] Points);
+
+    private record CrossSection(FaceSection FacePlane, Point3d[] CrossPoints);
+
     private record CrossEdge(int FaceId, Segment3d Edge, Point3d[] Points);
+
+    private record MeshSvgs(IEnumerable<Point3d[]> mainSvgs, IEnumerable<Point3d[]> holeSvgs = null);
 }
