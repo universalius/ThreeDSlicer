@@ -48,6 +48,7 @@ export default function App() {
 
   const handleAxisButtonClick = (axis: Axises) => {
     setSelectedAxis(axis)
+    setSlicePosition(50)
     sendCrossSectionMessage(axis, slicePosition)
   }
 
