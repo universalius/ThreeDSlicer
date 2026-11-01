@@ -1,6 +1,5 @@
 using GeometRi;
 using Microsoft.Extensions.Logging;
-using Microsoft.UI.Xaml.Controls;
 using ObjParser;
 using ObjParser.Types;
 using SvgLib;
@@ -47,12 +46,12 @@ public class CylinderObjectToSvgConverterSevice(IOFileService fileService, ILogg
         .ToList();
 
         var acp = axisCutPlanes.FirstOrDefault(i => i.Axis == cutPlane);
-        var crossCurveEdges = facePlanes.Select(fp =>
+        var crossCurveEdges = facePlanes.SelectMany(fp =>
         {
             var targetEdges = fp.Edges.Where(e => e.IsCutByOrthogonalPlane(acp.Plane, acp.Axis)).ToArray();
             if (targetEdges.Length == 0)
             {
-                return null;
+                return [];
             }
 
             var crossPoints = targetEdges
@@ -66,20 +65,32 @@ public class CylinderObjectToSvgConverterSevice(IOFileService fileService, ILogg
 
                     return [intersection as Point3d];
                 })
-                .Where(p => p != null && IsInsideBox(p, size))
-                .GroupBy(p => (
-                    Math.Round(p.X, 6),
-                    Math.Round(p.Y, 6),
-                    Math.Round(p.Z, 6)))
+                .Where(p => p != null)// && IsInsideBox(p, size))
+                .GroupBy(p => p.GetHashCodeInTolerance())
+                //(
+                //    Math.Round(p.X, 6),
+                //    Math.Round(p.Y, 6),
+                //    Math.Round(p.Z, 6)))
                 .Select(g => g.First())
                 .ToArray();
 
             if (crossPoints.Length == 1)
             {
-                return null;
+                return [];
             }
 
-            return new CrossSection(fp, crossPoints);
+            if (crossPoints.Length > 2)
+            {
+                if (crossPoints.Length % 2 == 1)
+                {
+                    throw new InvalidOperationException($"Odd number of cross points found for face {fp.Face.Id} on axis {acp.Axis}. This indicates a potential issue with the mesh or the cutting plane.");
+                }
+
+                crossPoints = SortCrossPoints(crossPoints, acp.Axis);
+                return crossPoints.Chunk(2).Select(s => new CrossSection(fp, s)).ToArray();
+            }
+
+            return [new CrossSection(fp, crossPoints)];
         })
         .Where(cp => cp != null)
         .ToArray();
@@ -174,6 +185,16 @@ public class CylinderObjectToSvgConverterSevice(IOFileService fileService, ILogg
         };
     }
 
+    private static Point3d[] SortCrossPoints(Point3d[] crossPoints, Axises axis)
+    {
+        return axis switch
+        {
+            Axises.XY => crossPoints.OrderBy(p => p.Y).ToArray(),
+            Axises.XZ => crossPoints.OrderBy(p => p.Z).ToArray(),
+            Axises.YZ => crossPoints.OrderBy(p => p.Y).ToArray(),
+        };
+    }
+
     private bool PointEquals(Point3d p1, Point3d p2)
     {
         return p1.DistanceTo(p2) <= 0.0001;
@@ -182,8 +203,8 @@ public class CylinderObjectToSvgConverterSevice(IOFileService fileService, ILogg
     private bool IsInsideBox(Point3d point, Extent box)
     {
         return point.X >= box.XMin && point.X <= box.XMax &&
-               point.Y >= box.YMin && point.Y <= box.YMax &&
-               point.Z >= box.ZMin && point.Z <= box.ZMax;
+                point.Y >= box.YMin && point.Y <= box.YMax &&
+                point.Z >= box.ZMin && point.Z <= box.ZMax;
     }
 
     private List<Point3d[]> GetLoops(Segment3d[] lines)
@@ -291,9 +312,6 @@ public class CylinderObjectToSvgConverterSevice(IOFileService fileService, ILogg
 
         return orderedPoints.ToArray();
     }
-
-
-
 
     private record MeshVertex(int Id, Point3d Point);
 

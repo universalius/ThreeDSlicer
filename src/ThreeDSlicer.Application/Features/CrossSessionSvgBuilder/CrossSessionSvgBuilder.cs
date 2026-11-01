@@ -20,23 +20,32 @@ public class CrossSessionSvgBuilder
         svgDocument.Width = 100;
         svgDocument.Height = 100;
 
-        var defs = svgDocument.AddDefs();
-        var pattern = defs.AddPattern();
-        pattern.Id = "hatch-45";
-        pattern.Width = 10;
-        pattern.Height = 10;
-        pattern.PatternUnits = "userSpaceOnUse";
+        var allBounds = new List<PolygonBounds>();
+        var index = 1;
+        meshes.ToList().ForEach(m =>
+        {
+            var defs = svgDocument.AddDefs();
+            var pattern = defs.AddPattern();
+            pattern.Id = $"hatch-45-{index}";
+            pattern.Width = 10;
+            pattern.Height = 10;
+            pattern.PatternUnits = "userSpaceOnUse";
 
-        var line = pattern.AddLine();
-        line.X1 = 0;
-        line.Y1 = 0;
-        line.X2 = 20;
-        line.Y2 = 20;
-        line.SetStyle("stroke", "red");
-        line.SetStyle("stroke-width", "0.5");
-        line.SetStyle("stroke-linecap", "square");
+            var line = pattern.AddLine();
+            line.X1 = 0;
+            line.Y1 = 0;
+            line.X2 = 20;
+            line.Y2 = 20;
+            line.SetStyle("stroke", "red");
+            line.SetStyle("stroke-width", "0.5");
+            line.SetStyle("stroke-linecap", "square");
 
-        var bounds = GetPointsFromPolygonBounds(meshes.Select(m => AddPathes(svgDocument, m))).GetPolygonBounds();
+            var meshBounds = AddPathes(svgDocument, m, "red", index);
+            allBounds.Add(meshBounds);
+            index++;
+        });
+
+        var bounds = GetPointsFromPolygonBounds(allBounds).GetPolygonBounds();
 
         var xMin = bounds.XMin > 0 ? bounds.XMin + 5 : bounds.XMin - 5;
         var yMin = bounds.YMin > 0 ? bounds.YMin + 5 : bounds.YMin - 5;
@@ -46,7 +55,7 @@ public class CrossSessionSvgBuilder
         return svgDocument;
     }
 
-    public PolygonBounds AddPathes(SvgDocument svgDocument, MeshLoops mesh)
+    public PolygonBounds AddPathes(SvgDocument svgDocument, MeshLoops mesh, string color, int hatchId)
     {
         var loopBounds = mesh.Mains.Select(l => l.GetPolygonBounds());
         var meshBounds = GetPointsFromPolygonBounds(loopBounds).GetPolygonBounds();
@@ -54,7 +63,7 @@ public class CrossSessionSvgBuilder
         mesh.Mains.ToList().ForEach(l =>
         {
             var path = svgDocument.AddPath();
-            FillPath(path, l);
+            FillPath(path, l, color, hatchId);
         });
 
         return meshBounds;
@@ -70,11 +79,11 @@ public class CrossSessionSvgBuilder
             }).ToArray();
     }
 
-    private void FillPath(SvgPath path, Point3d[] points)
+    private void FillPath(SvgPath path, Point3d[] points, string color, int hatchId)
     {
         path.D = points.ToPathString();
         path.SetStyle("stroke-width", "1");
-        path.SetStyle("stroke", "red");
-        path.SetStyle("fill", "url(#hatch-45)");
+        path.SetStyle("stroke", color);
+        path.SetStyle("fill", $"url(#hatch-45-{hatchId})");
     }
 }
