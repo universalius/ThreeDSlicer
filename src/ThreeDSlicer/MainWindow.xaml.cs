@@ -7,7 +7,6 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
-using ThreeDSlicer.Application.Enums;
 using ThreeDSlicer.Application.Features.CrossSessionSvgBuilder;
 using ThreeDSlicer.Application.Features.CylinderObjectToSvgConverter;
 using ThreeDSlicer.Application.Features.ObjToMeshConverter;
@@ -99,8 +98,7 @@ namespace ThreeDSlicer
 
         private async void StartReactApp(object sender, RoutedEventArgs e)
         {
-            var meshObject = await _objToMeshConverter.Convert();
-            var loopPoints = _cylinderToSvgConverter.Convert(meshObject, Axises.XY).Mains.First();
+            var meshObjects = await _objToMeshConverter.Convert();
 
             try
             {
@@ -188,8 +186,8 @@ namespace ThreeDSlicer
 
                             if (webViewMessage.Type == "cross-section")
                             {
-                                var mesh = _cylinderToSvgConverter.Convert(meshObject, webViewMessage.Axis, webViewMessage.CutPosition);
-                                SendSvgToFrontend(core, mesh);
+                                var meshes = meshObjects.Select(m => _cylinderToSvgConverter.Convert(m, webViewMessage.Axis, webViewMessage.CutPosition)).ToArray();
+                                SendSvgToFrontend(core, meshes);
                                 return;
                             }
                         };
@@ -206,9 +204,9 @@ namespace ThreeDSlicer
             }
         }
 
-        private void SendSvgToFrontend(CoreWebView2 core, MeshLoops mesh)
+        private void SendSvgToFrontend(CoreWebView2 core, MeshLoops[] meshes)
         {
-            var svgDocument = _crossSessionSvgBuilder.BuildSvg(mesh);
+            var svgDocument = _crossSessionSvgBuilder.BuildSvg(meshes);
 
             var payload = new
             {

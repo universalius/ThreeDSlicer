@@ -16,7 +16,7 @@ public class ObjToMeshConverterService
         _file = file;
     }
 
-    public async Task<MeshObject> Convert()
+    public async Task<List<MeshObject>> Convert()
     {
         var content = await _file.ReadObjFile();
         var contentWitoutComments = content.Where(l => !l.StartsWith("#"));
@@ -35,7 +35,7 @@ public class ObjToMeshConverterService
 
         var meshObjects = GetMeshObjects(obj, obj.FaceList.First().VertexIndexList.ToList(), new List<MeshObject>());
 
-        return meshObjects.First();
+        return meshObjects;
     }
 
     public Task<string> GetObjFileContent()
