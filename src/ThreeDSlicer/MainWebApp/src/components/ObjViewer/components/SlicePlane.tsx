@@ -63,10 +63,25 @@ export const SlicePlane = memo(function SlicePlane({
   const size = axisPlane.size;
   const rotation = axisPlaneView.rotation;
 
+  const isPlaneFaceOn = (() => {
+    switch (axis) {
+      case Axises.XY:
+        return view === 'front';
+      case Axises.XZ:
+        return view === 'top';
+      case Axises.YZ:
+        return view === 'left';
+      default:
+        return false;
+    }
+  })();
+
+  const opacity = isPlaneFaceOn ? 0.08 : 0.2;
+
   return (
     <mesh position={position} rotation={rotation} scale={modelScale} renderOrder={10}>
-      <boxGeometry args={[size.x, size.y, 1]} />
-      <meshBasicMaterial color="red" transparent opacity={0.2} side={DoubleSide} depthTest={false} depthWrite={false} />
+      <boxGeometry args={[size.x, size.y, 1.5]} />
+      <meshBasicMaterial color="red" transparent opacity={opacity} side={DoubleSide} depthTest={false} depthWrite={false} />
     </mesh>
   );
 });
