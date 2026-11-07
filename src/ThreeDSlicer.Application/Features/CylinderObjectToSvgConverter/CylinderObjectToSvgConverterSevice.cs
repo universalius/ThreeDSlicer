@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using ThreeDSlicer.Application.Enums;
+using ThreeDSlicer.Application.Features.CylinderObjectToSvgConverter.Models;
 using ThreeDSlicer.Application.Features.IOFile;
 using ThreeDSlicer.Application.Features.ObjToMeshConverter;
 using ThreeDSlicer.Application.Helpers;
@@ -17,7 +18,7 @@ namespace ThreeDSlicer.Application.Features.CylinderObjectToSvgConverter;
 
 public class CylinderObjectToSvgConverterSevice(IOFileService fileService, ILogger<CylinderObjectToSvgConverterSevice> logger)
 {
-    public MeshLoops Convert(MeshObject meshObject, Axises cutPlane, int? cutPlaneRelPos = 50)
+    public MeshLoop[] Convert(MeshObject meshObject, Axises cutPlane, int? cutPlaneRelPos = 50)
     {
         var size = meshObject.Size;
         var points = meshObject.Verts.Select(v => new MeshVertex(v.Index, new Point3d(v.X, v.Y, v.Z))).ToArray();
@@ -118,8 +119,7 @@ public class CylinderObjectToSvgConverterSevice(IOFileService fileService, ILogg
             fileService.SaveSvg($"{cutPlane.ToString()}_cross_slice_{index}", svgDocument.Element.OuterXml);
         });
 
-        return new MeshLoops(
-            Mains: loops.Select(l => l.Select(p => p.ChangeAxises(cutPlane)).ToArray()));
+        return GetMeshLoops(loops);
     }
 
     private void DebugCrossSection(Axises cutPlane, CrossSection[] crossCurveEdges, PolygonBounds bounds, double xMin, double yMin)
@@ -205,6 +205,37 @@ public class CylinderObjectToSvgConverterSevice(IOFileService fileService, ILogg
         return point.X >= box.XMin && point.X <= box.XMax &&
                 point.Y >= box.YMin && point.Y <= box.YMax &&
                 point.Z >= box.ZMin && point.Z <= box.ZMax;
+    }
+
+    private MeshLoop[] GetMeshLoops(List<Point3d[]> loops)
+    {
+        if (loops == null || loops.Count == 0)
+        {
+            return [new MeshLoop([], [])];
+        }
+
+        if (loops.Count == 1)
+        {
+            return [new MeshLoop(loops[0], [])];
+        }
+
+        var loopBounds = loops.Select(l => new { Loop = l, Bounds = l.GetPolygonBounds() }).ToArray();
+        var outerBounds = loopBounds.Select(l => l.Bounds).GetBounds();
+
+        var outerLoop = loopBounds.FirstOrDefault(l => l.Bounds.Equals(outerBounds))?.Loop;
+        if (outerLoop != null)
+        {
+            var holes = loopBounds
+                .Where(loop => !ReferenceEquals(loop, outerLoop))
+                .Select(loop => loop.Loop)
+                .ToArray();
+
+            return [new MeshLoop(
+                Main: outerLoop,
+                Holes: holes)];
+        }
+
+
     }
 
     private List<Point3d[]> GetLoops(Segment3d[] lines)
@@ -312,16 +343,4 @@ public class CylinderObjectToSvgConverterSevice(IOFileService fileService, ILogg
 
         return orderedPoints.ToArray();
     }
-
-    private record MeshVertex(int Id, Point3d Point);
-
-    private record AxisCutPlane(Axises Axis, Plane3d Plane);
-
-    private record FaceSection(Face Face, Plane3d Plane, Segment3d[] Edges, Point3d[] Points);
-
-    private record CrossSection(FaceSection FacePlane, Point3d[] CrossPoints);
-
-    private record CrossEdge(int FaceId, Segment3d Edge, Point3d[] Points);
-
-    public record MeshLoops(IEnumerable<Point3d[]> Mains, IEnumerable<Point3d[]> Holes = null);
 }

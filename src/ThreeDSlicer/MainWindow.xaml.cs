@@ -9,6 +9,7 @@ using System.Linq;
 using System.Net.Http;
 using ThreeDSlicer.Application.Features.CrossSessionSvgBuilder;
 using ThreeDSlicer.Application.Features.CylinderObjectToSvgConverter;
+using ThreeDSlicer.Application.Features.CylinderObjectToSvgConverter.Models;
 using ThreeDSlicer.Application.Features.ObjToMeshConverter;
 using ThreeDSlicer.Application.Models;
 using WinRT.Interop;

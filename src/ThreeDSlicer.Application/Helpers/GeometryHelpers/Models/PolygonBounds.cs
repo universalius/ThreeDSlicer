@@ -16,4 +16,8 @@ public class PolygonBounds
     public double Width { get { return XMax - XMin; } }
     public double Height { get { return YMax - YMin; } }
 
+    public bool Equals(PolygonBounds other)
+    {
+        return XMax == other.XMax && XMin == other.XMin && YMax == other.YMax && YMin == other.YMin;
+    }
 }

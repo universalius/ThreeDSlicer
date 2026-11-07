@@ -3,10 +3,10 @@ using SvgLib;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using ThreeDSlicer.Application.Features.CylinderObjectToSvgConverter.Models;
 using ThreeDSlicer.Application.Helpers;
 using ThreeDSlicer.Application.Helpers.GeometryHelpers;
 using ThreeDSlicer.Application.Helpers.GeometryHelpers.Models;
-using static ThreeDSlicer.Application.Features.CylinderObjectToSvgConverter.CylinderObjectToSvgConverterSevice;
 
 namespace ThreeDSlicer.Application.Features.CrossSessionSvgBuilder;
 
@@ -45,7 +45,7 @@ public class CrossSessionSvgBuilder
             index++;
         });
 
-        var bounds = GetPointsFromPolygonBounds(allBounds).GetPolygonBounds();
+        var bounds = allBounds.GetBounds();
 
         var xMin = bounds.XMin > 0 ? bounds.XMin + 5 : bounds.XMin - 5;
         var yMin = bounds.YMin > 0 ? bounds.YMin + 5 : bounds.YMin - 5;
@@ -58,7 +58,7 @@ public class CrossSessionSvgBuilder
     public PolygonBounds AddPathes(SvgDocument svgDocument, MeshLoops mesh, string color, int hatchId)
     {
         var loopBounds = mesh.Mains.Select(l => l.GetPolygonBounds());
-        var meshBounds = GetPointsFromPolygonBounds(loopBounds).GetPolygonBounds();
+        var meshBounds = loopBounds.GetBounds();
 
         mesh.Mains.ToList().ForEach(l =>
         {
@@ -67,16 +67,6 @@ public class CrossSessionSvgBuilder
         });
 
         return meshBounds;
-    }
-
-    private Point3d[] GetPointsFromPolygonBounds(IEnumerable<PolygonBounds> loopBounds)
-    {
-        return loopBounds.SelectMany(b =>
-            new[]
-            {
-                new Point3d(b.XMin, b.YMin, 0),
-                new Point3d(b.XMax, b.YMax, 0)
-            }).ToArray();
     }
 
     private void FillPath(SvgPath path, Point3d[] points, string color, int hatchId)
