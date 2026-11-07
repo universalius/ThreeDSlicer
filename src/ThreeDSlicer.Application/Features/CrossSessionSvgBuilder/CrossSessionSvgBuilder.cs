@@ -12,7 +12,7 @@ namespace ThreeDSlicer.Application.Features.CrossSessionSvgBuilder;
 
 public class CrossSessionSvgBuilder
 {
-    public SvgDocument BuildSvg(MeshLoops[] meshes)
+    public SvgDocument BuildSvg(MeshLoopList[] meshes)
     {
         var svgDocument = SvgDocument.Create();
         svgDocument.Units = "%";
@@ -55,26 +55,34 @@ public class CrossSessionSvgBuilder
         return svgDocument;
     }
 
-    public PolygonBounds AddPathes(SvgDocument svgDocument, MeshLoops mesh, string color, int hatchId)
+    public PolygonBounds AddPathes(SvgDocument svgDocument, MeshLoopList mesh, string color, int hatchId)
     {
-        var loopBounds = mesh.Mains.Select(l => l.GetPolygonBounds());
-        var meshBounds = loopBounds.GetBounds();
-
-        mesh.Mains.ToList().ForEach(l =>
+        var meshLoopsBounds = new List<PolygonBounds>();
+        foreach (var item in mesh.Items)
         {
             var path = svgDocument.AddPath();
-            FillPath(path, l, color, hatchId);
-        });
+            FillPath(path, color, hatchId);
 
-        return meshBounds;
+            var allLoops = new List<Point3d[]> { item.Main };
+            if (item.Holes != null)
+            {
+                allLoops.AddRange(item.Holes);
+            }
+
+            path.D = string.Join(" ", allLoops.Select(loop => loop.ToPathString()));
+
+            meshLoopsBounds.Add(item.Main.GetPolygonBounds());
+        }
+
+        return meshLoopsBounds.GetBounds();
     }
 
-    private void FillPath(SvgPath path, Point3d[] points, string color, int hatchId)
+    private void FillPath(SvgPath path, string color, int hatchId)
     {
-        path.D = points.ToPathString();
         path.SetStyle("stroke-width", "1");
         path.SetStyle("stroke", color);
         path.SetStyle("fill", $"url(#hatch-45-{hatchId})");
+        path.SetStyle("fill-rule", "evenodd");
     }
 
     private readonly string[] StandardColors =

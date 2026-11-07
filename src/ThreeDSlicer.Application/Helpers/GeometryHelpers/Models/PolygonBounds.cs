@@ -20,4 +20,9 @@ public class PolygonBounds
     {
         return XMax == other.XMax && XMin == other.XMin && YMax == other.YMax && YMin == other.YMin;
     }
+
+    public bool IsInside(PolygonBounds other)
+    {
+        return XMin >= other.XMin && XMax <= other.XMax && YMin >= other.YMin && YMax <= other.YMax;
+    }
 }

@@ -20,3 +20,5 @@ public record CrossSection(FaceSection FacePlane, Point3d[] CrossPoints);
 public record CrossEdge(int FaceId, Segment3d Edge, Point3d[] Points);
 
 public record MeshLoop(Point3d[] Main, IEnumerable<Point3d[]> Holes = null);
+
+public record MeshLoopList(MeshLoop[] Items);

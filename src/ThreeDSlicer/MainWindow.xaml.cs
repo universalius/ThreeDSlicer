@@ -187,7 +187,10 @@ namespace ThreeDSlicer
 
                             if (webViewMessage.Type == "cross-section")
                             {
-                                var meshes = meshObjects.Select(m => _cylinderToSvgConverter.Convert(m, webViewMessage.Axis, webViewMessage.CutPosition)).ToArray();
+                                var meshes = meshObjects
+                                    .Select(m => _cylinderToSvgConverter.Convert(m, webViewMessage.Axis, webViewMessage.CutPosition))
+                                    .Where(m => m != null)
+                                    .ToArray();
                                 SendSvgToFrontend(core, meshes);
                                 return;
                             }
@@ -205,7 +208,7 @@ namespace ThreeDSlicer
             }
         }
 
-        private void SendSvgToFrontend(CoreWebView2 core, MeshLoops[] meshes)
+        private void SendSvgToFrontend(CoreWebView2 core, MeshLoopList[] meshes)
         {
             var svgDocument = _crossSessionSvgBuilder.BuildSvg(meshes);
 

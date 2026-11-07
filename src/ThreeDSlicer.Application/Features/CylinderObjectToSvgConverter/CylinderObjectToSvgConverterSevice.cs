@@ -13,12 +13,13 @@ using ThreeDSlicer.Application.Features.ObjToMeshConverter;
 using ThreeDSlicer.Application.Helpers;
 using ThreeDSlicer.Application.Helpers.GeometryHelpers;
 using ThreeDSlicer.Application.Helpers.GeometryHelpers.Models;
+using Windows.Devices.Lights;
 
 namespace ThreeDSlicer.Application.Features.CylinderObjectToSvgConverter;
 
 public class CylinderObjectToSvgConverterSevice(IOFileService fileService, ILogger<CylinderObjectToSvgConverterSevice> logger)
 {
-    public MeshLoop[] Convert(MeshObject meshObject, Axises cutPlane, int? cutPlaneRelPos = 50)
+    public MeshLoopList Convert(MeshObject meshObject, Axises cutPlane, int? cutPlaneRelPos = 50)
     {
         var size = meshObject.Size;
         var points = meshObject.Verts.Select(v => new MeshVertex(v.Index, new Point3d(v.X, v.Y, v.Z))).ToArray();
@@ -119,7 +120,7 @@ public class CylinderObjectToSvgConverterSevice(IOFileService fileService, ILogg
             fileService.SaveSvg($"{cutPlane.ToString()}_cross_slice_{index}", svgDocument.Element.OuterXml);
         });
 
-        return GetMeshLoops(loops);
+        return GetMeshLoops(loops.Select(l => l.Select(p => p.ChangeAxises(cutPlane)).ToArray()).ToList());
     }
 
     private void DebugCrossSection(Axises cutPlane, CrossSection[] crossCurveEdges, PolygonBounds bounds, double xMin, double yMin)
@@ -207,36 +208,64 @@ public class CylinderObjectToSvgConverterSevice(IOFileService fileService, ILogg
                 point.Z >= box.ZMin && point.Z <= box.ZMax;
     }
 
-    private MeshLoop[] GetMeshLoops(List<Point3d[]> loops)
+    private MeshLoopList GetMeshLoops(List<Point3d[]> loops)
     {
         if (loops == null || loops.Count == 0)
         {
-            return [new MeshLoop([], [])];
+            return null;
         }
 
         if (loops.Count == 1)
         {
-            return [new MeshLoop(loops[0], [])];
+            return new MeshLoopList([new MeshLoop(loops[0])]);
         }
 
-        var loopBounds = loops.Select(l => new { Loop = l, Bounds = l.GetPolygonBounds() }).ToArray();
-        var outerBounds = loopBounds.Select(l => l.Bounds).GetBounds();
+        var polygons = loops.Select(l => new Polygon(l, l.GetPolygonBounds())).ToArray();
+        var outerBounds = polygons.Select(l => l.Bounds).GetBounds();
 
-        var outerLoop = loopBounds.FirstOrDefault(l => l.Bounds.Equals(outerBounds))?.Loop;
-        if (outerLoop != null)
+        var outerPolygon = polygons.FirstOrDefault(l => l.Bounds.Equals(outerBounds));
+        if (outerPolygon != null)
         {
-            var holes = loopBounds
-                .Where(loop => !ReferenceEquals(loop, outerLoop))
-                .Select(loop => loop.Loop)
+            var holes = polygons
+                .Where(p => !ReferenceEquals(p, outerPolygon))
+                .Select(loop => loop.Points)
                 .ToArray();
 
-            return [new MeshLoop(
-                Main: outerLoop,
-                Holes: holes)];
+            return new MeshLoopList([new MeshLoop(outerPolygon.Points, holes)]);
         }
 
+        var childParentMap = new Dictionary<Polygon, Polygon?>();
+        foreach (var polygon in polygons)
+        {
+            var parent = polygons
+                .FirstOrDefault(candidate => !ReferenceEquals(candidate, polygon) && candidate.Bounds.IsInside(polygon.Bounds));
 
+            childParentMap[polygon] = parent;
+        }
+
+        var rootPolygons = polygons.Where(p => childParentMap[p] is null).ToArray();
+        return new MeshLoopList(
+            rootPolygons
+                .Select(root => new MeshLoop(root.Points, CollectNestedLoops(root, childParentMap)))
+                .ToArray());
     }
+
+    private Point3d[][] CollectNestedLoops(Polygon parent, Dictionary<Polygon, Polygon?> childParentMap)
+    {
+        var nestedLoops = new List<Point3d[]>();
+        foreach (var kvp in childParentMap)
+        {
+            var child = kvp.Key;
+            var parentCandidate = kvp.Value;
+            if (ReferenceEquals(parentCandidate, parent))
+            {
+                nestedLoops.Add(child.Points);
+                nestedLoops.AddRange(CollectNestedLoops(child, childParentMap));
+            }
+        }
+        return nestedLoops.ToArray();
+    }
+
 
     private List<Point3d[]> GetLoops(Segment3d[] lines)
     {
