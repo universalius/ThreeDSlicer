@@ -31,6 +31,26 @@ const cameraPositions: Record<ViewName, [number, number, number]> = {
   top: [0, 10, 0],
 };
 
+type LightConfig = {
+  key: [number, number, number];
+  fill: [number, number, number];
+};
+
+const viewLights: Record<ViewName, LightConfig> = {
+  front: {
+    key: [8, 8, 10],
+    fill: [-8, -4, 6],
+  },
+  left: {
+    key: [-10, 8, 8],
+    fill: [-6, -4, -8],
+  },
+  top: {
+    key: [8, 10, 8],
+    fill: [-8, 6, -8],
+  },
+};
+
 const Model = memo(function Model({ url, objText }: { url?: string; objText?: string }) {
   if (objText) {
     return <ModelFromText objText={objText} />;
@@ -57,6 +77,7 @@ export function ObjViewer({
   slicePosition?: number;
 }) {
   const cameraPosition = cameraPositions[view];
+  const lights = viewLights[view];
   const model = useModelObject({ url, objText });
 
   return (
@@ -66,9 +87,9 @@ export function ObjViewer({
 
         <OrthographicCamera makeDefault position={cameraPosition} zoom={55} near={0.1} far={1000} />
 
-        <ambientLight intensity={1.2} />
-        <directionalLight position={[10, 10, 5]} intensity={1.8} />
-        <directionalLight position={[-10, -5, -10]} intensity={0.8} />
+        <ambientLight intensity={0.5} />
+        <directionalLight position={lights.key} intensity={1.8} />
+        <directionalLight position={lights.fill} intensity={0.45} />
 
         <Model url={url} objText={objText} />
         <SlicePlane view={view} axis={axis} slicePosition={slicePosition} model={model} />
