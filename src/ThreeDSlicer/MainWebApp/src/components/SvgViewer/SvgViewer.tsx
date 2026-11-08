@@ -153,7 +153,21 @@ export const SvgViewer = (props: ReactSVGPanZoomProps) => {
   const autoPanIsRunning = useRef(true);
   const [pointerX, setPointerX] = useState(null);
   const [pointerY, setPointerY] = useState(null);
-  const [defaultValue] = useState(() => {
+  // const [defaultValue] = useState(() => {
+  //   const { width: viewerWidth, height: viewerHeight, scaleFactorMin, scaleFactorMax, svgElement } = props;
+  //   const { viewBox: svgElementViewBox } = svgElement.props;
+
+  //   if (svgElementViewBox) {
+  //     const svgViewbox = parseViewBox(svgElementViewBox);
+  //     return getDefaultValue(viewerWidth, viewerHeight, svgViewbox, scaleFactorMin, scaleFactorMax);
+  //   }
+
+  //   const { width: SVGWidth = 0, height: SVGHeight = 0 } = svgElement.props;
+  //   const svgViewbox = { minX: 0, minY: 0, width: SVGWidth, height: SVGHeight };
+  //   return getDefaultValue(viewerWidth, viewerHeight, svgViewbox, scaleFactorMin, scaleFactorMax);
+  // });
+
+  const [getValue, setValue] = useState(() => {
     const { width: viewerWidth, height: viewerHeight, scaleFactorMin, scaleFactorMax, svgElement } = props;
     const { viewBox: svgElementViewBox } = svgElement.props;
 
@@ -167,32 +181,32 @@ export const SvgViewer = (props: ReactSVGPanZoomProps) => {
     return getDefaultValue(viewerWidth, viewerHeight, svgViewbox, scaleFactorMin, scaleFactorMax);
   });
 
-  const getValue = useCallback(() => {
-    if (isValueValid(props.value)) return props.value;
-    return defaultValue;
-  }, [defaultValue, props.value]);
+  // const getValue = useCallback(() => {
+  //   if (isValueValid(props.value)) return props.value;
+  //   return defaultValue;
+  // }, [defaultValue, props.value]);
 
   const getTool = useCallback(() => {
     if (props.tool) return props.tool;
-    return TOOL_NONE;
+    return TOOL_AUTO;
   }, [props.tool]);
 
-  const setValue = useCallback(
-    (nextValue) => {
-      let { onChangeValue, onZoom, onPan } = props;
+  // const setValue = useCallback(
+  //   (nextValue) => {
+  //     let { onChangeValue, onZoom, onPan } = props;
 
-      if (onChangeValue) onChangeValue(nextValue);
-      if (nextValue.lastAction) {
-        if (onZoom && nextValue.lastAction === ACTION_ZOOM) onZoom(nextValue);
-        if (onPan && nextValue.lastAction === ACTION_PAN) onPan(nextValue);
-      }
-    },
-    [props],
-  );
+  //     if (onChangeValue) onChangeValue(nextValue);
+  //     if (nextValue.lastAction) {
+  //       if (onZoom && nextValue.lastAction === ACTION_ZOOM) onZoom(nextValue);
+  //       if (onPan && nextValue.lastAction === ACTION_PAN) onPan(nextValue);
+  //     }
+  //   },
+  //   [props],
+  // );
 
   const pan = useCallback(
     (SVGDeltaX, SVGDeltaY) => {
-      let nextValue = panFn(getValue(), SVGDeltaX, SVGDeltaY);
+      let nextValue = panFn(getValue, SVGDeltaX, SVGDeltaY);
       setValue(nextValue);
     },
     [getValue, setValue],
@@ -200,7 +214,7 @@ export const SvgViewer = (props: ReactSVGPanZoomProps) => {
 
   const zoom = useCallback(
     (SVGPointX, SVGPointY, scaleFactor) => {
-      let nextValue = zoomFn(getValue(), SVGPointX, SVGPointY, scaleFactor);
+      let nextValue = zoomFn(getValue, SVGPointX, SVGPointY, scaleFactor);
       setValue(nextValue);
     },
     [getValue, setValue],
@@ -208,13 +222,7 @@ export const SvgViewer = (props: ReactSVGPanZoomProps) => {
 
   const fitSelection = useCallback(
     (selectionSVGPointX, selectionSVGPointY, selectionWidth, selectionHeight) => {
-      let nextValue = fitSelectionFn(
-        getValue(),
-        selectionSVGPointX,
-        selectionSVGPointY,
-        selectionWidth,
-        selectionHeight,
-      );
+      let nextValue = fitSelectionFn(getValue, selectionSVGPointX, selectionSVGPointY, selectionWidth, selectionHeight);
       setValue(nextValue);
     },
     [getValue, setValue],
@@ -222,7 +230,7 @@ export const SvgViewer = (props: ReactSVGPanZoomProps) => {
 
   const fitToViewer = useCallback(
     (SVGAlignX = ALIGN_LEFT, SVGAlignY = ALIGN_TOP) => {
-      let nextValue = fitToViewerFn(getValue(), SVGAlignX, SVGAlignY);
+      let nextValue = fitToViewerFn(getValue, SVGAlignX, SVGAlignY);
       setValue(nextValue);
     },
     [getValue, setValue],
@@ -230,7 +238,7 @@ export const SvgViewer = (props: ReactSVGPanZoomProps) => {
 
   const zoomOnViewerCenter = useCallback(
     (scaleFactor) => {
-      let nextValue = zoomOnViewerCenterFn(getValue(), scaleFactor);
+      let nextValue = zoomOnViewerCenterFn(getValue, scaleFactor);
       setValue(nextValue);
     },
     [getValue, setValue],
@@ -238,24 +246,24 @@ export const SvgViewer = (props: ReactSVGPanZoomProps) => {
 
   const setPointOnViewerCenter = useCallback(
     (SVGPointX, SVGPointY, zoomLevel) => {
-      let nextValue = setPointOnViewerCenterFn(getValue(), SVGPointX, SVGPointY, zoomLevel);
+      let nextValue = setPointOnViewerCenterFn(getValue, SVGPointX, SVGPointY, zoomLevel);
       setValue(nextValue);
     },
     [getValue, setValue],
   );
 
   const resetView = useCallback(() => {
-    let nextValue = resetFn(getValue());
+    let nextValue = resetFn(getValue);
     setValue(nextValue);
   }, [getValue, setValue]);
 
   const openMiniature = useCallback(() => {
-    let nextValue = openMiniatureFn(getValue());
+    let nextValue = openMiniatureFn(getValue);
     setValue(nextValue);
   }, [getValue, setValue]);
 
   const closeMiniature = useCallback(() => {
-    let nextValue = closeMiniatureFn(getValue());
+    let nextValue = closeMiniatureFn(getValue);
     setValue(nextValue);
   }, [getValue, setValue]);
 
@@ -286,8 +294,8 @@ export const SvgViewer = (props: ReactSVGPanZoomProps) => {
 
   const autoPanLoop = useCallback(() => {
     let coords = { x: pointerX, y: pointerY };
-    let nextValue = onInterval(null, viewerRef.current, getTool(), getValue(), props, coords);
-    if (getValue() !== nextValue) {
+    let nextValue = onInterval(null, viewerRef.current, getTool(), getValue, props, coords);
+    if (getValue !== nextValue) {
       setValue(nextValue);
     }
 
@@ -298,14 +306,14 @@ export const SvgViewer = (props: ReactSVGPanZoomProps) => {
 
   const onWheel = useCallback(
     (event) => {
-      let nextValue = onWheelFn(event, viewerRef.current, getTool(), getValue(), props);
-      if (getValue() !== nextValue) setValue(nextValue);
+      let nextValue = onWheelFn(event, viewerRef.current, getTool(), getValue, props);
+      if (getValue !== nextValue) setValue(nextValue);
     },
     [getValue, getTool, props, setValue],
   );
 
   useEffect(() => {
-    const value = getValue();
+    const value = getValue;
     let nextValue = value;
     let needUpdate = false;
 
@@ -368,7 +376,7 @@ export const SvgViewer = (props: ReactSVGPanZoomProps) => {
   }, [autoPanLoop, onWheel]);
 
   let tool = getTool();
-  let value = getValue();
+  let value = getValue;
   // let { customToolbar: CustomToolbar = Toolbar, customMiniature: CustomMiniature = Miniature } = props;
 
   let panningWithToolAuto =
@@ -378,11 +386,11 @@ export const SvgViewer = (props: ReactSVGPanZoomProps) => {
 
   if (tool === TOOL_PAN) cursor = cursorPolyfill(value.mode === MODE_PANNING ? 'grabbing' : 'grab');
 
-  // if (tool === TOOL_ZOOM_IN) cursor = cursorPolyfill('zoom-in');
+  if (tool === TOOL_ZOOM_IN) cursor = cursorPolyfill('zoom-in');
 
-  // if (tool === TOOL_ZOOM_OUT) cursor = cursorPolyfill('zoom-out');
+  if (tool === TOOL_ZOOM_OUT) cursor = cursorPolyfill('zoom-out');
 
-  // if (panningWithToolAuto) cursor = cursorPolyfill('grabbing');
+  if (panningWithToolAuto) cursor = cursorPolyfill('grabbing');
 
   let blockChildEvents = [TOOL_PAN, TOOL_ZOOM_IN, TOOL_ZOOM_OUT].indexOf(tool) >= 0;
   blockChildEvents = blockChildEvents || panningWithToolAuto;
@@ -400,8 +408,8 @@ export const SvgViewer = (props: ReactSVGPanZoomProps) => {
         height={value.viewerHeight}
         style={style}
         onMouseDown={(event) => {
-          let nextValue = onMouseDown(event, viewerRef.current, getTool(), getValue(), props);
-          if (getValue() !== nextValue) setValue(nextValue);
+          let nextValue = onMouseDown(event, viewerRef.current, getTool(), getValue, props);
+          if (getValue !== nextValue) setValue(nextValue);
           handleViewerEvent(event);
         }}
         onMouseMove={(event) => {
@@ -409,53 +417,53 @@ export const SvgViewer = (props: ReactSVGPanZoomProps) => {
           let x = event.clientX - Math.round(left);
           let y = event.clientY - Math.round(top);
 
-          let nextValue = onMouseMove(event, viewerRef.current, getTool(), getValue(), props, { x, y });
-          if (getValue() !== nextValue) setValue(nextValue);
+          let nextValue = onMouseMove(event, viewerRef.current, getTool(), getValue, props, { x, y });
+          if (getValue !== nextValue) setValue(nextValue);
           setPointerX(x);
           setPointerY(y);
           handleViewerEvent(event);
         }}
         onMouseUp={(event) => {
-          let nextValue = onMouseUp(event, viewerRef.current, getTool(), getValue(), props);
-          if (getValue() !== nextValue) setValue(nextValue);
+          let nextValue = onMouseUp(event, viewerRef.current, getTool(), getValue, props);
+          if (getValue !== nextValue) setValue(nextValue);
           handleViewerEvent(event);
         }}
         onClick={(event) => {
           handleViewerEvent(event);
         }}
         onDoubleClick={(event) => {
-          let nextValue = onDoubleClick(event, viewerRef.current, getTool(), getValue(), props);
-          if (getValue() !== nextValue) setValue(nextValue);
+          let nextValue = onDoubleClick(event, viewerRef.current, getTool(), getValue, props);
+          if (getValue !== nextValue) setValue(nextValue);
           handleViewerEvent(event);
         }}
         onMouseEnter={(event) => {
           if (isTouchDevice()) return;
-          let nextValue = onMouseEnterOrLeave(event, viewerRef.current, getTool(), getValue(), props);
-          if (getValue() !== nextValue) setValue(nextValue);
+          let nextValue = onMouseEnterOrLeave(event, viewerRef.current, getTool(), getValue, props);
+          if (getValue !== nextValue) setValue(nextValue);
         }}
         onMouseLeave={(event) => {
-          let nextValue = onMouseEnterOrLeave(event, viewerRef.current, getTool(), getValue(), props);
-          if (getValue() !== nextValue) setValue(nextValue);
+          let nextValue = onMouseEnterOrLeave(event, viewerRef.current, getTool(), getValue, props);
+          if (getValue !== nextValue) setValue(nextValue);
         }}
 
         // onTouchStart={event => {
-        //   let nextValue = onTouchStart(event, ViewerDOM.current, getTool(), getValue(), props);
-        //   if (getValue() !== nextValue) setValue(nextValue);
+        //   let nextValue = onTouchStart(event, ViewerDOM.current, getTool(), getValue, props);
+        //   if (getValue !== nextValue) setValue(nextValue);
         //   handleViewerEvent(event);
         // }}
         // onTouchMove={event => {
-        //   let nextValue = onTouchMove(event, ViewerDOM.current, getTool(), getValue(), props);
-        //   if (getValue() !== nextValue) setValue(nextValue);
+        //   let nextValue = onTouchMove(event, ViewerDOM.current, getTool(), getValue, props);
+        //   if (getValue !== nextValue) setValue(nextValue);
         //   handleViewerEvent(event);
         // }}
         // onTouchEnd={event => {
-        //   let nextValue = onTouchEnd(event, ViewerDOM.current, getTool(), getValue(), props);
-        //   if (getValue() !== nextValue) setValue(nextValue);
+        //   let nextValue = onTouchEnd(event, ViewerDOM.current, getTool(), getValue, props);
+        //   if (getValue !== nextValue) setValue(nextValue);
         //   handleViewerEvent(event);
         // }}
         // onTouchCancel={event => {
-        //   let nextValue = onTouchCancel(event, ViewerDOM.current, getTool(), getValue(), props);
-        //   if (getValue() !== nextValue) setValue(nextValue);
+        //   let nextValue = onTouchCancel(event, ViewerDOM.current, getTool(), getValue, props);
+        //   if (getValue !== nextValue) setValue(nextValue);
         //   handleViewerEvent(event);
         // }}
       >
