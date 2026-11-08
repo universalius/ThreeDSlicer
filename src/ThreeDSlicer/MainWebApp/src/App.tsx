@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { SvgRenderer } from './components/SvgRenderer';
+import { SvgRenderer } from './components/SvgRenderer/SvgRenderer';
 import { ObjViewer } from './components/ObjViewer/ObjViewer';
 import styles from './App.module.css';
 import { Axises } from './types';
 import type { WebViewMessage, WebViewBridge, WebViewResponse, CrossSectionData, ObjData } from './types';
-import svgTest from './components/svgTest.svg?raw';
-// import objTest from './components/cube.obj?raw';
-import objTest from './components/test_cross_section.obj?raw';
+// import svgTest from './components/assets/svgTest.svg?raw';
+import svgTest from './components/assets/mosfetSvgTest.svg?raw';
+// import objTest from './components/assets/cube.obj?raw';
+// import objTest from './components/assets/test_cross_section.obj?raw';
+import objTest from './components/assets/Mosfet.obj?raw';
 
 declare global {
   interface Window {

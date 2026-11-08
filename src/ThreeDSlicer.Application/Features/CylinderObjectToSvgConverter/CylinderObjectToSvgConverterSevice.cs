@@ -103,21 +103,21 @@ public class CylinderObjectToSvgConverterSevice(IOFileService fileService, ILogg
         DebugCrossSection(cutPlane, crossCurveEdges, bounds, xMin, yMin);
 
         var loops = GetLoops(crossCurveEdges.Select(ce => ce.CrossPoints.ToSegments(false)[0]).ToArray());
-        var index = 0;
-        loops.ForEach(loop =>
-        {
-            index++;
+        //var index = 0;
+        //loops.ForEach(loop =>
+        //{
+        //    index++;
 
-            var svgDocument = SvgDocument.Create();
-            svgDocument.Units = "mm";
-            var path = svgDocument.AddPath();
-            path.D = loop.ToPathString(cutPlane);
-            path.SetStyle("stroke-width", "1");
-            path.SetStyle("stroke", "red");
-            path.SetStyle("fill", "none");
+        //    var svgDocument = SvgDocument.Create();
+        //    svgDocument.Units = "mm";
+        //    var path = svgDocument.AddPath();
+        //    path.D = loop.ToPathString(cutPlane);
+        //    path.SetStyle("stroke-width", "1");
+        //    path.SetStyle("stroke", "red");
+        //    path.SetStyle("fill", "none");
 
-            fileService.SaveSvg($"{cutPlane.ToString()}_cross_slice_{index}", svgDocument.Element.OuterXml);
-        });
+        //    fileService.SaveSvg($"{cutPlane.ToString()}_cross_slice_{index}", svgDocument.Element.OuterXml);
+        //});
 
         return GetMeshLoops(loops.Select(l => l.Select(p => p.ChangeAxises(cutPlane)).ToArray()).ToList());
     }

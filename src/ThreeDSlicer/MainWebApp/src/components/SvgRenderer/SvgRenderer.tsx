@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { UncontrolledReactSVGPanZoom, ALIGN_LEFT, ALIGN_CENTER } from 'react-svg-pan-zoom'
-import { renderSvgNode } from '../helpers/renderSvgNode'
+import { renderSvgNode } from '../../helpers/renderSvgNode'
 
 export const SvgRenderer = ({ svgMarkup }: { svgMarkup: string }) => {
   const containerRef = useRef<HTMLDivElement | null>(null)
-  const viewer = useRef<{ fitToViewer?: () => void } | null>(null)
+  const viewer = useRef<{ fitToViewer: () => void } | null>(null)
   const [viewportSize, setViewportSize] = useState({ width: 800, height: 600 })
 
   useEffect(() => {
@@ -20,7 +20,8 @@ export const SvgRenderer = ({ svgMarkup }: { svgMarkup: string }) => {
       const height = Math.max(250, Math.round(rect.height))
 
       setViewportSize({ width, height })
-      viewer.current?.fitToViewer?.(ALIGN_LEFT, ALIGN_CENTER)
+      console.log('viewwer.current', viewer.current)
+      // viewer.current?.fitToViewer()
     }
 
     updateSize()
@@ -51,6 +52,8 @@ export const SvgRenderer = ({ svgMarkup }: { svgMarkup: string }) => {
   if (!renderedSvg) {
     return null
   }
+
+  console.log('Viewport size:', viewportSize.width, viewportSize.height)
 
   return (
     <div ref={containerRef} className="svgViewport">

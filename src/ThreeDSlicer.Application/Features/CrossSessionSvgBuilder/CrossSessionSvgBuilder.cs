@@ -24,23 +24,8 @@ public class CrossSessionSvgBuilder
         meshes.ToList().ForEach(m =>
         {
             var color = GetColor(index - 1);
-            var defs = svgDocument.AddDefs();
-            var pattern = defs.AddPattern();
-            pattern.Id = $"hatch-45-{index}";
-            pattern.Width = 5;
-            pattern.Height = 5;
-            pattern.PatternUnits = "userSpaceOnUse";
-
-            var line = pattern.AddLine();
-            line.X1 = 0;
-            line.Y1 = 0;
-            line.X2 = 20;
-            line.Y2 = 20;
-            line.SetStyle("stroke", color);
-            line.SetStyle("stroke-width", "0.5");
-            line.SetStyle("stroke-linecap", "square");
-
             var meshBounds = AddPathes(svgDocument, m, color, index);
+            AddHatchPattern(svgDocument, meshBounds, color, index);
             allBounds.Add(meshBounds);
             index++;
         });
@@ -50,7 +35,7 @@ public class CrossSessionSvgBuilder
         var xMin = bounds.XMin > 0 ? bounds.XMin + 5 : bounds.XMin - 5;
         var yMin = bounds.YMin > 0 ? bounds.YMin + 5 : bounds.YMin - 5;
 
-        svgDocument.ViewBox = new SvgViewBox(xMin, yMin, bounds.Width + 2 * 5, bounds.Height);
+        svgDocument.ViewBox = new SvgViewBox(xMin, yMin, bounds.Width + 2 * 5, bounds.Height + 2 * 5);
 
         return svgDocument;
     }
@@ -75,6 +60,42 @@ public class CrossSessionSvgBuilder
         }
 
         return meshLoopsBounds.GetBounds();
+    }
+
+    private static void AddHatchPattern(SvgDocument svgDocument, PolygonBounds meshBounds, string color, int hatchId)
+    {
+        var patternSize = GetPatternSize(meshBounds, 10);
+
+        var defs = svgDocument.AddDefs();
+        var pattern = defs.AddPattern();
+        pattern.Id = $"hatch-45-{hatchId}";
+        pattern.Width = patternSize.Width;
+        pattern.Height = patternSize.Height;
+        pattern.PatternUnits = "userSpaceOnUse";
+
+        var line = pattern.AddLine();
+        line.X1 = pattern.Width;
+        line.Y1 = 0;
+        line.X2 = 0;
+        line.Y2 = pattern.Height;
+        line.SetStyle("stroke", color);
+        line.SetStyle("stroke-width", "0.5");
+        line.SetStyle("stroke-linecap", "square");
+    }
+
+    private static PolygonBounds GetPatternSize(PolygonBounds meshBounds, int linesPerBound)
+    {
+        var safeLinesPerBound = Math.Max(linesPerBound, 1);
+        var size = Math.Max(meshBounds.Width, meshBounds.Height);
+        var patternStep = size <= 0 ? 1 : size / safeLinesPerBound;
+
+        return new PolygonBounds
+        {
+            XMin = 0,
+            XMax = patternStep,
+            YMin = 0,
+            YMax = patternStep,
+        };
     }
 
     private void FillPath(SvgPath path, string color, int hatchId)
