@@ -1,60 +1,57 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { UncontrolledReactSVGPanZoom, ALIGN_LEFT, ALIGN_CENTER } from 'react-svg-pan-zoom'
-import { renderSvgNode } from '../../helpers/renderSvgNode'
-import { SvgViewer } from '../SvgViewer/SvgViewer'
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { UncontrolledReactSVGPanZoom, ALIGN_LEFT, ALIGN_CENTER } from 'react-svg-pan-zoom';
+import { renderSvgNode } from '../../helpers/renderSvgNode';
+import { SvgViewer } from '../SvgViewer/SvgViewer';
 
 export const SvgRenderer = ({ svgMarkup }: { svgMarkup: string }) => {
-  const containerRef = useRef<HTMLDivElement | null>(null)
-  const viewer = useRef<{ fitToViewer: () => void } | null>(null)
-  const [viewportSize, setViewportSize] = useState({ width: 800, height: 600 })
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const viewer = useRef<{ fitToViewer: () => void } | null>(null);
+  const [viewportSize, setViewportSize] = useState({ width: 800, height: 600 });
 
   useEffect(() => {
-    const element = containerRef.current
+    const element = containerRef.current;
 
     if (!element) {
-      return
+      return;
     }
 
     const updateSize = () => {
-      const rect = element.getBoundingClientRect()
-      const width = Math.max(300, Math.round(rect.width))
-      const height = Math.max(250, Math.round(rect.height))
+      const rect = element.getBoundingClientRect();
+      const width = Math.max(300, Math.round(rect.width));
+      const height = Math.max(250, Math.round(rect.height));
 
-      setViewportSize({ width, height })
-      console.log('viewwer.current', viewer.current)
+      setViewportSize({ width, height });
       // viewer.current?.fitToViewer()
-    }
+    };
 
-    updateSize()
+    updateSize();
 
-    const resizeObserver = new ResizeObserver(updateSize)
-    resizeObserver.observe(element)
+    const resizeObserver = new ResizeObserver(updateSize);
+    resizeObserver.observe(element);
 
-    return () => resizeObserver.disconnect()
-  }, [])
+    return () => resizeObserver.disconnect();
+  }, []);
 
   const resolvedSvgMarkup = svgMarkup;
 
   const renderedSvg = useMemo(() => {
     if (!resolvedSvgMarkup) {
-      return null
+      return null;
     }
 
-    const parsed = new DOMParser().parseFromString(resolvedSvgMarkup, 'image/svg+xml')
-    const svgElement = parsed.documentElement
+    const parsed = new DOMParser().parseFromString(resolvedSvgMarkup, 'image/svg+xml');
+    const svgElement = parsed.documentElement;
 
     if (!svgElement || svgElement.nodeName.toLowerCase() !== 'svg') {
-      return null
+      return null;
     }
 
-    return renderSvgNode(svgElement)
-  }, [resolvedSvgMarkup])
+    return renderSvgNode(svgElement);
+  }, [resolvedSvgMarkup]);
 
   if (!renderedSvg) {
-    return null
+    return null;
   }
-
-  console.log('Viewport size:', viewportSize.width, viewportSize.height)
 
   return (
     <div ref={containerRef} className="svgViewport">
@@ -72,7 +69,7 @@ export const SvgRenderer = ({ svgMarkup }: { svgMarkup: string }) => {
         {renderedSvg}
       </UncontrolledReactSVGPanZoom> */}
 
-            <SvgViewer
+      <SvgViewer
         ref={viewer}
         width={viewportSize.width}
         height={viewportSize.height}
@@ -82,9 +79,8 @@ export const SvgRenderer = ({ svgMarkup }: { svgMarkup: string }) => {
         background="transparent"
         miniatureProps={{ position: 'none', background: 'transparent', width: 120, height: 120 }}
         toolbarProps={{ position: 'none' }}
-      >
-        {renderedSvg}
-      </SvgViewer>
+        svgElement={renderedSvg}
+      />
 
       {/* <UncontrolledReactSVGPanZoom
         ref={viewer}
@@ -103,5 +99,5 @@ export const SvgRenderer = ({ svgMarkup }: { svgMarkup: string }) => {
         </svg>
       </UncontrolledReactSVGPanZoom> */}
     </div>
-  )
-}
+  );
+};

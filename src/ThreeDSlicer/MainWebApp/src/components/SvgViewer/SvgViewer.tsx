@@ -46,7 +46,7 @@ import {
 // import BorderGradient from './ui/border-gradient';
 // import Selection from './ui/selection';
 // import Toolbar from './ui-toolbar/toolbar';
-// import detectTouch from './ui/detect-touch';
+// import isTouchDevice from './ui/detect-touch';
 // import Miniature from './ui-miniature/miniature';
 
 import {
@@ -72,6 +72,8 @@ import {
   TOOL_ZOOM_OUT,
 } from './constants';
 import { parseViewBox } from './helpers/parseViewBox';
+import cursorPolyfill from './helpers/cursor-polyfill';
+import { isTouchDevice } from './helpers/detect-touch';
 
 // type ToolbarProps = React.ComponentProps<typeof Toolbar>;
 // type MiniatureProps = React.ComponentProps<typeof Miniature>;
@@ -367,7 +369,7 @@ export const SvgViewer = (props: ReactSVGPanZoomProps) => {
 
   let tool = getTool();
   let value = getValue();
-  let { customToolbar: CustomToolbar = Toolbar, customMiniature: CustomMiniature = Miniature } = props;
+  // let { customToolbar: CustomToolbar = Toolbar, customMiniature: CustomMiniature = Miniature } = props;
 
   let panningWithToolAuto =
     tool === TOOL_AUTO && value.mode === MODE_PANNING && value.startX !== value.endX && value.startY !== value.endY;
@@ -376,11 +378,11 @@ export const SvgViewer = (props: ReactSVGPanZoomProps) => {
 
   if (tool === TOOL_PAN) cursor = cursorPolyfill(value.mode === MODE_PANNING ? 'grabbing' : 'grab');
 
-  if (tool === TOOL_ZOOM_IN) cursor = cursorPolyfill('zoom-in');
+  // if (tool === TOOL_ZOOM_IN) cursor = cursorPolyfill('zoom-in');
 
-  if (tool === TOOL_ZOOM_OUT) cursor = cursorPolyfill('zoom-out');
+  // if (tool === TOOL_ZOOM_OUT) cursor = cursorPolyfill('zoom-out');
 
-  if (panningWithToolAuto) cursor = cursorPolyfill('grabbing');
+  // if (panningWithToolAuto) cursor = cursorPolyfill('grabbing');
 
   let blockChildEvents = [TOOL_PAN, TOOL_ZOOM_IN, TOOL_ZOOM_OUT].indexOf(tool) >= 0;
   blockChildEvents = blockChildEvents || panningWithToolAuto;
@@ -427,7 +429,7 @@ export const SvgViewer = (props: ReactSVGPanZoomProps) => {
           handleViewerEvent(event);
         }}
         onMouseEnter={(event) => {
-          if (detectTouch()) return;
+          if (isTouchDevice()) return;
           let nextValue = onMouseEnterOrLeave(event, viewerRef.current, getTool(), getValue(), props);
           if (getValue() !== nextValue) setValue(nextValue);
         }}
@@ -498,9 +500,9 @@ export const SvgViewer = (props: ReactSVGPanZoomProps) => {
           </g>
         )} */}
 
-        {!(value.mode === MODE_ZOOMING) ? null : (
+        {/* {!(value.mode === MODE_ZOOMING) ? null : (
           <Selection startX={value.startX} startY={value.startY} endX={value.endX} endY={value.endY} />
-        )}
+        )} */}
       </svg>
 
       {/* {toolbarProps.position === POSITION_NONE ? null :
