@@ -1,4 +1,5 @@
 import { MODE_IDLE } from '../constants';
+import type { SvgViewBox } from '../types';
 import { applyToPoint, fromObject, identity, inverse, scale, transform, translate } from 'transformation-matrix';
 
 const VERSION = 3;
@@ -21,10 +22,7 @@ export type ViewerValue = MatrixLike & {
   prePinchMode: string | null;
   viewerWidth: number;
   viewerHeight: number;
-  SVGMinX: number;
-  SVGMinY: number;
-  SVGWidth: number;
-  SVGHeight: number;
+  svgViewbox: SvgViewBox;
   scaleFactorMin: number | null;
   scaleFactorMax: number | null;
   startX: number | null;
@@ -39,10 +37,7 @@ export type ViewerValue = MatrixLike & {
 export const getDefaultValue = (
   viewerWidth: number,
   viewerHeight: number,
-  SVGMinX: number,
-  SVGMinY: number,
-  SVGWidth: number,
-  SVGHeight: number,
+  svgViewbox: SvgViewBox,
   scaleFactorMin: number | null = null,
   scaleFactorMax: number | null = null,
 ): ViewerValue =>
@@ -57,11 +52,7 @@ export const getDefaultValue = (
       prePinchMode: null,
       viewerWidth,
       viewerHeight,
-      SVGMinX,
-      SVGMinY,
-      SVGWidth,
-      SVGHeight,
-      scaleFactorMin,
+      svgViewbox,
       scaleFactorMax,
       startX: null,
       startY: null,
@@ -110,13 +101,7 @@ export const setFocus = (value: ViewerValue, focus: boolean): ViewerValue => set
 export const setViewerSize = (value: ViewerValue, viewerWidth: number, viewerHeight: number): ViewerValue =>
   set(value, { viewerWidth, viewerHeight });
 
-export const setSVGViewBox = (
-  value: ViewerValue,
-  SVGMinX: number,
-  SVGMinY: number,
-  SVGWidth: number,
-  SVGHeight: number,
-): ViewerValue => set(value, { SVGMinX, SVGMinY, SVGWidth, SVGHeight });
+export const setSVGViewBox = (value: ViewerValue, svgViewbox: SvgViewBox): ViewerValue => set(value, { svgViewbox });
 
 export const setZoomLevels = (
   value: ViewerValue,

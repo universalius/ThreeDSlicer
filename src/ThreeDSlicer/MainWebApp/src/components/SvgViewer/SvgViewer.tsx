@@ -156,12 +156,13 @@ export const SvgViewer = (props: ReactSVGPanZoomProps) => {
     const { viewBox: svgElementViewBox } = svgElement.props;
 
     if (svgElementViewBox) {
-      const { minX, minY, width, height } = parseViewBox(svgElementViewBox);
-      return getDefaultValue(viewerWidth, viewerHeight, minX, minY, width, height, scaleFactorMin, scaleFactorMax);
+      const svgViewbox = parseViewBox(svgElementViewBox);
+      return getDefaultValue(viewerWidth, viewerHeight, svgViewbox, scaleFactorMin, scaleFactorMax);
     }
 
-    const { width: SVGWidth, height: SVGHeight } = svgElement.props;
-    return getDefaultValue(viewerWidth, viewerHeight, 0, 0, SVGWidth, SVGHeight, scaleFactorMin, scaleFactorMax);
+    const { width: SVGWidth = 0, height: SVGHeight = 0 } = svgElement.props;
+    const svgViewbox = { minX: 0, minY: 0, width: SVGWidth, height: SVGHeight };
+    return getDefaultValue(viewerWidth, viewerHeight, svgViewbox, scaleFactorMin, scaleFactorMax);
   });
 
   const getValue = useCallback(() => {
@@ -308,16 +309,27 @@ export const SvgViewer = (props: ReactSVGPanZoomProps) => {
 
     const { viewBox: SVGViewBox } = props.svgElement.props;
     if (SVGViewBox) {
-      const [x, y, width, height] = parseViewBox(SVGViewBox);
+      const svgViewbox = parseViewBox(SVGViewBox);
 
-      if (value.SVGMinX !== x || value.SVGMinY !== y || value.SVGWidth !== width || value.SVGHeight !== height) {
-        nextValue = setSVGViewBox(nextValue, x, y, width, height);
+      if (
+        value.svgViewbox.minX !== svgViewbox.minX ||
+        value.svgViewbox.minY !== svgViewbox.minY ||
+        value.svgViewbox.width !== svgViewbox.width ||
+        value.svgViewbox.height !== svgViewbox.height
+      ) {
+        nextValue = setSVGViewBox(nextValue, svgViewbox);
         needUpdate = true;
       }
     } else {
-      const { width: SVGWidth, height: SVGHeight } = props.svgElement.props;
-      if (value.SVGWidth !== SVGWidth || value.SVGHeight !== SVGHeight) {
-        nextValue = setSVGViewBox(nextValue, 0, 0, SVGWidth, SVGHeight);
+      const { width: SVGWidth = 0, height: SVGHeight = 0 } = props.svgElement.props;
+      const svgViewbox = { minX: 0, minY: 0, width: SVGWidth, height: SVGHeight };
+      if (
+        value.svgViewbox.minX !== svgViewbox.minX ||
+        value.svgViewbox.minY !== svgViewbox.minY ||
+        value.svgViewbox.width !== svgViewbox.width ||
+        value.svgViewbox.height !== svgViewbox.height
+      ) {
+        nextValue = setSVGViewBox(nextValue, svgViewbox);
         needUpdate = true;
       }
     }
@@ -458,10 +470,10 @@ export const SvgViewer = (props: ReactSVGPanZoomProps) => {
           <rect
             fill={SVGBackground}
             style={SVGStyle}
-            x={value.SVGMinX || 0}
-            y={value.SVGMinY || 0}
-            width={value.SVGWidth}
-            height={value.SVGHeight}
+            x={value.svgViewbox.minX || 0}
+            y={value.svgViewbox.minY || 0}
+            width={value.svgViewbox.width}
+            height={value.svgViewbox.height}
           />
           <g>{props.svgElement.props.children}</g>
         </g>

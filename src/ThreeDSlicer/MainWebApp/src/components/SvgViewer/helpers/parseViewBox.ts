@@ -1,11 +1,6 @@
-export const parseViewBox = (
-  viewbox: string,
-): {
-  minX: number;
-  minY: number;
-  width: number;
-  height: number;
-} => {
+import { SvgViewBox } from '../types';
+
+export const parseViewBox = (viewbox: string): SvgViewBox => {
   SVGSVGElement;
 
   // viewBox specs: https://www.w3.org/TR/SVG/coords.html#ViewBoxAttribute
