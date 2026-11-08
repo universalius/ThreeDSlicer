@@ -6,6 +6,8 @@ namespace ThreeDSlicer.Application.Features.ObjToMeshConverter;
 
 public class MeshObject
 {
+    public string Name { get; set; }
+    public Obj Obj { get; set; }
     public IEnumerable<Vertex> Verts { get; set; }
     public IEnumerable<Face> Faces { get; set; }
     public Extent Size { get; set; }

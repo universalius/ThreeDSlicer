@@ -22,18 +22,21 @@ public class ObjToMeshConverterService
         var contentWitoutComments = content.Where(l => !l.StartsWith("#"));
 
         var meshesText = string.Join(Environment.NewLine, contentWitoutComments)
-            .Split(new string[] { "o " }, StringSplitOptions.None)
+            .Split("o ")
             .Where(t => !(string.IsNullOrEmpty(t) || t == "\r\n")).ToList();
 
-        var meshText = meshesText.First();
+        var meshObjects = new List<MeshObject>();
+        meshesText.ForEach(t =>
+        {
+            var meshLines = t.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
+            var obj = new Obj();
+            obj.VertexListShift = meshObjects.Any() ? meshObjects.Last().Obj.VertexList.Last().Index : 0;
+            obj.NormalListShift = meshObjects.Any() ? meshObjects.Last().Obj.NormalList.Last().Index : 0;
+            obj.LoadObj(meshLines.Skip(1));
 
-        var mesTextLines = meshText.Split(new string[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
-        var obj = new Obj();
-        obj.VertexListShift = 0;
-        obj.NormalListShift = 0;
-        obj.LoadObj(mesTextLines.Skip(1));
-
-        var meshObjects = GetMeshObjects(obj, obj.FaceList.First().VertexIndexList.ToList(), new List<MeshObject>());
+            var objects = GetMeshObjects(obj, meshLines[0], obj.FaceList.First().VertexIndexList.ToList(), new List<MeshObject>());
+            meshObjects.AddRange(objects);
+        });
 
         return meshObjects;
     }
@@ -43,7 +46,7 @@ public class ObjToMeshConverterService
         return _file.ReadObjFileContent();
     }
 
-    private List<MeshObject> GetMeshObjects(Obj obj, List<int> firstFaceVetexIds, List<MeshObject> meshObjects)
+    private List<MeshObject> GetMeshObjects(Obj obj, string meshName, List<int> firstFaceVetexIds, List<MeshObject> meshObjects)
     {
         var (objectFacesIds, objectVertsIds) = GetObjectFaces(obj,
             firstFaceVetexIds,
@@ -51,6 +54,8 @@ public class ObjToMeshConverterService
 
         var meshObject = new MeshObject
         {
+            Name = meshName,
+            Obj = obj,
             Verts = obj.VertexList.Where(v => objectVertsIds.Contains(v.Index)).ToArray(),
             Faces = obj.FaceList.Where(f => objectFacesIds.Contains(f.Id)).ToArray(),
             Size = obj.Size,
@@ -62,7 +67,7 @@ public class ObjToMeshConverterService
 
         if (otherFaces.Any())
         {
-            GetMeshObjects(obj, otherFaces.First().VertexIndexList.ToList(), meshObjects);
+            GetMeshObjects(obj, meshName, otherFaces.First().VertexIndexList.ToList(), meshObjects);
         }
 
         return meshObjects;

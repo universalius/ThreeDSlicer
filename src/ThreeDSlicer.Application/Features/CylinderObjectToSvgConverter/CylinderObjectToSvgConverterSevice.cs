@@ -13,7 +13,6 @@ using ThreeDSlicer.Application.Features.ObjToMeshConverter;
 using ThreeDSlicer.Application.Helpers;
 using ThreeDSlicer.Application.Helpers.GeometryHelpers;
 using ThreeDSlicer.Application.Helpers.GeometryHelpers.Models;
-using Windows.Devices.Lights;
 
 namespace ThreeDSlicer.Application.Features.CylinderObjectToSvgConverter;
 

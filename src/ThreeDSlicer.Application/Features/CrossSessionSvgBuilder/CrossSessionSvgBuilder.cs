@@ -27,8 +27,8 @@ public class CrossSessionSvgBuilder
             var defs = svgDocument.AddDefs();
             var pattern = defs.AddPattern();
             pattern.Id = $"hatch-45-{index}";
-            pattern.Width = 10;
-            pattern.Height = 10;
+            pattern.Width = 5;
+            pattern.Height = 5;
             pattern.PatternUnits = "userSpaceOnUse";
 
             var line = pattern.AddLine();
