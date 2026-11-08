@@ -74,5 +74,7 @@ export const renderSvgNode = (node: Node): React.ReactNode => {
 
   const children = Array.from(element.childNodes).map(renderSvgNode)
 
+console.log('Rendering SVG node:', { tagName, props, children })
+
   return React.createElement(tagName, props, ...children)
 }

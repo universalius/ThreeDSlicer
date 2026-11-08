@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { UncontrolledReactSVGPanZoom, ALIGN_LEFT, ALIGN_CENTER } from 'react-svg-pan-zoom'
 import { renderSvgNode } from '../../helpers/renderSvgNode'
+import { SvgViewer } from '../SvgViewer/SvgViewer'
 
 export const SvgRenderer = ({ svgMarkup }: { svgMarkup: string }) => {
   const containerRef = useRef<HTMLDivElement | null>(null)
@@ -57,7 +58,7 @@ export const SvgRenderer = ({ svgMarkup }: { svgMarkup: string }) => {
 
   return (
     <div ref={containerRef} className="svgViewport">
-      <UncontrolledReactSVGPanZoom
+      {/* <UncontrolledReactSVGPanZoom
         ref={viewer}
         width={viewportSize.width}
         height={viewportSize.height}
@@ -69,7 +70,21 @@ export const SvgRenderer = ({ svgMarkup }: { svgMarkup: string }) => {
         toolbarProps={{ position: 'none' }}
       >
         {renderedSvg}
-      </UncontrolledReactSVGPanZoom>
+      </UncontrolledReactSVGPanZoom> */}
+
+            <SvgViewer
+        ref={viewer}
+        width={viewportSize.width}
+        height={viewportSize.height}
+        defaultTool="pan"
+        scaleFactorMin={0.2}
+        scaleFactorMax={8}
+        background="transparent"
+        miniatureProps={{ position: 'none', background: 'transparent', width: 120, height: 120 }}
+        toolbarProps={{ position: 'none' }}
+      >
+        {renderedSvg}
+      </SvgViewer>
 
       {/* <UncontrolledReactSVGPanZoom
         ref={viewer}
