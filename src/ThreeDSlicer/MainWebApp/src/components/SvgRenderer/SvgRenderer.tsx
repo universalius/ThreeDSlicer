@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { UncontrolledReactSVGPanZoom, ALIGN_LEFT, ALIGN_CENTER } from 'react-svg-pan-zoom';
 import { renderSvgNode } from '../../helpers/renderSvgNode';
-import { SvgViewer } from '../SvgViewer/SvgViewer';
+import { SvgViewer, type SvgViewerHandle } from '../SvgViewer/SvgViewer';
 
 export const SvgRenderer = ({ svgMarkup }: { svgMarkup: string }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const viewer = useRef<{ fitToViewer: () => void } | null>(null);
+  const viewer = useRef<SvgViewerHandle | null>(null);
   const [viewportSize, setViewportSize] = useState({ width: 800, height: 600 });
 
   useEffect(() => {

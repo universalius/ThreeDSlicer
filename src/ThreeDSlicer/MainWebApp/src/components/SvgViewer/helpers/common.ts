@@ -1,6 +1,15 @@
 import { MODE_IDLE } from '../constants';
-import type { SvgViewBox } from '../types';
-import { applyToPoint, fromObject, identity, inverse, scale, transform, translate } from 'transformation-matrix';
+import type { Point, SvgViewBox } from '../types';
+import {
+  applyToPoint,
+  fromObject,
+  identity,
+  inverse,
+  Matrix,
+  scale,
+  transform,
+  translate,
+} from 'transformation-matrix';
 
 const VERSION = 3;
 export const DEFAULT_MODE = MODE_IDLE;
@@ -14,55 +23,6 @@ export type MatrixLike = {
   f: number;
 };
 
-export type ViewerValue = MatrixLike & {
-  version: number;
-  mode: string;
-  focus: boolean;
-  pinchPointDistance: number | null;
-  prePinchMode: string | null;
-  viewerWidth: number;
-  viewerHeight: number;
-  svgViewbox: SvgViewBox;
-  scaleFactorMin: number | null;
-  scaleFactorMax: number | null;
-  startX: number | null;
-  startY: number | null;
-  endX: number | null;
-  endY: number | null;
-  miniatureOpen: boolean;
-  lastAction: string | null;
-  [key: string]: unknown;
-};
-
-export const getDefaultValue = (
-  viewerWidth: number,
-  viewerHeight: number,
-  svgViewbox: SvgViewBox,
-  scaleFactorMin: number | null = null,
-  scaleFactorMax: number | null = null,
-): ViewerValue =>
-  set(
-    {},
-    {
-      ...identity(),
-      version: VERSION,
-      mode: DEFAULT_MODE,
-      focus: false,
-      pinchPointDistance: null,
-      prePinchMode: null,
-      viewerWidth,
-      viewerHeight,
-      svgViewbox,
-      scaleFactorMax,
-      startX: null,
-      startY: null,
-      endX: null,
-      endY: null,
-      miniatureOpen: true,
-      lastAction: null,
-    },
-  );
-
 export const set = <T extends Record<string, unknown>>(value: T, patch: Partial<T>, action: string | null = null): T =>
   Object.freeze({
     ...value,
@@ -70,23 +30,22 @@ export const set = <T extends Record<string, unknown>>(value: T, patch: Partial<
     lastAction: action,
   }) as T;
 
-export const isValueValid = (value: unknown): value is ViewerValue => {
+export const isValueValid = (value: unknown): value is SvgViewerState => {
   return (
     value !== null &&
     typeof value === 'object' &&
     Object.prototype.hasOwnProperty.call(value, 'version') &&
-    (value as ViewerValue).version === VERSION
+    (value as SvgViewerState).version === VERSION
   );
 };
 
-export const getSVGPoint = (value: ViewerValue, viewerX: number, viewerY: number) => {
-  const matrix = fromObject(value);
-  const inverseMatrix = inverse(matrix);
+export const getSVGPoint = (oldState: SvgViewerState, mousePos: Point) => {
+  const inverseMatrix = inverse(oldState as Matrix);
 
-  return applyToPoint(inverseMatrix, { x: viewerX, y: viewerY });
+  return applyToPoint(inverseMatrix, mousePos);
 };
 
-export const decompose = (value: ViewerValue) => {
+export const decompose = (value: SvgViewerState) => {
   const matrix = fromObject(value);
 
   return {
@@ -96,25 +55,26 @@ export const decompose = (value: ViewerValue) => {
   };
 };
 
-export const setFocus = (value: ViewerValue, focus: boolean): ViewerValue => set(value, { focus });
+export const setFocus = (value: SvgViewerState, focus: boolean): SvgViewerState => set(value, { focus });
 
-export const setViewerSize = (value: ViewerValue, viewerWidth: number, viewerHeight: number): ViewerValue =>
+export const setViewerSize = (value: SvgViewerState, viewerWidth: number, viewerHeight: number): SvgViewerState =>
   set(value, { viewerWidth, viewerHeight });
 
-export const setSVGViewBox = (value: ViewerValue, svgViewbox: SvgViewBox): ViewerValue => set(value, { svgViewbox });
+export const setSVGViewBox = (value: SvgViewerState, svgViewbox: SvgViewBox): SvgViewerState =>
+  set(value, { svgViewbox });
 
 export const setZoomLevels = (
-  value: ViewerValue,
+  value: SvgViewerState,
   scaleFactorMin: number | null,
   scaleFactorMax: number | null,
-): ViewerValue => set(value, { scaleFactorMin, scaleFactorMax });
+): SvgViewerState => set(value, { scaleFactorMin, scaleFactorMax });
 
 export const setPointOnViewerCenter = (
-  value: ViewerValue,
+  value: SvgViewerState,
   SVGPointX: number,
   SVGPointY: number,
   zoomLevel: number,
-): ViewerValue => {
+): SvgViewerState => {
   const { viewerWidth, viewerHeight } = value;
 
   const matrix = transform(
@@ -130,13 +90,13 @@ export const setPointOnViewerCenter = (
   });
 };
 
-export const reset = (value: ViewerValue): ViewerValue =>
+export const reset = (value: SvgViewerState): SvgViewerState =>
   set(value, {
     mode: MODE_IDLE,
     ...identity(),
   });
 
-export const resetMode = (value: ViewerValue): ViewerValue =>
+export const resetMode = (value: SvgViewerState): SvgViewerState =>
   set(value, {
     mode: DEFAULT_MODE,
     startX: null,
