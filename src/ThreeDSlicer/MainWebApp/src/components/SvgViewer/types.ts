@@ -22,3 +22,12 @@ export enum ViewerMouseAction {
   PANNING = 'panning',
   ZOOMING = 'zooming',
 }
+
+export enum ViewerSvgAlign {
+  CENTER = 'center',
+  LEFT = 'left',
+  RIGHT = 'right',
+  TOP = 'top',
+  BOTTOM = 'bottom',
+  COVER = 'cover',
+}

@@ -12,6 +12,7 @@ import {
 } from './helpers/interactions';
 import { Point, SvgElementProps, SvgViewBox, ViewerMouseAction } from './types';
 import React from 'react';
+import { fitToViewer } from './helpers/zoom';
 
 export type SvgViewerState = { mousePos?: Point; action: ViewerMouseAction; transformMatrix?: Matrix };
 
@@ -21,6 +22,10 @@ export type SvgViewerProps = {
   className: string;
   svgElement: ReactElement<SvgElementProps>;
   tool: string;
+  styles?: {
+    backgroundColor: string;
+    svgElement: { backgroundColor: string };
+  };
 };
 
 export type SvgViewerDimensions = {
@@ -29,7 +34,7 @@ export type SvgViewerDimensions = {
   viewbox: SvgViewBox;
 };
 
-export const SvgViewer1 = ({ viewerWidth, viewerHeight, className, svgElement, tool }: SvgViewerProps) => {
+export const SvgViewer1 = ({ viewerWidth, viewerHeight, className, svgElement, tool, styles }: SvgViewerProps) => {
   const [svgState, setSvgState] = useState<SvgViewerState>({
     mousePos: { x: 0, y: 0 },
     action: ViewerMouseAction.IDLE,
@@ -38,6 +43,20 @@ export const SvgViewer1 = ({ viewerWidth, viewerHeight, className, svgElement, t
 
   const viewerRef = React.useRef<SVGSVGElement>(null);
   const svgViewbox = parseViewBox(svgElement.props.viewBox ?? '');
+
+  useEffect(() => {
+    console.log('size', viewerWidth, viewerHeight);
+    const newTransformMatrix = fitToViewer({
+      width: viewerWidth,
+      height: viewerHeight,
+      viewbox: svgViewbox,
+    });
+
+    setSvgState({
+      ...svgState,
+      transformMatrix: newTransformMatrix,
+    });
+  }, [viewerWidth, viewerHeight]);
 
   const handleMouseDown = (event: React.MouseEvent<SVGSVGElement>) => {
     const newState = onMouseDown(event, viewerRef.current, tool, svgState);
@@ -137,14 +156,21 @@ export const SvgViewer1 = ({ viewerWidth, viewerHeight, className, svgElement, t
         onTouchCancel={handleTouchCancel}
         onWheel={handleOnWheel}
       >
-        <rect fill="#616264" x={0} y={0} width={viewerWidth} height={viewerHeight} style={{ pointerEvents: 'none' }} />
+        <rect
+          fill={styles?.backgroundColor ?? '#FFF'}
+          x={0}
+          y={0}
+          width={viewerWidth}
+          height={viewerHeight}
+          style={{ pointerEvents: 'none' }}
+        />
 
         <g
           transform={svgState?.transformMatrix ? toSVG(svgState.transformMatrix) : undefined}
           style={{ pointerEvents: 'none' }}
         >
           <rect
-            fill="#fff"
+            fill={styles?.svgElement?.backgroundColor ?? '#fff'}
             x={svgViewbox.minX || 0}
             y={svgViewbox.minY || 0}
             width={svgViewbox.width}

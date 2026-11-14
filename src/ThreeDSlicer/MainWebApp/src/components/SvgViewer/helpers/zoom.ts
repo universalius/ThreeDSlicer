@@ -1,20 +1,10 @@
 import { fromObject, Matrix, scale, transform, translate } from 'transformation-matrix';
 
-import {
-  ACTION_ZOOM,
-  ALIGN_BOTTOM,
-  ALIGN_CENTER,
-  ALIGN_COVER,
-  ALIGN_LEFT,
-  ALIGN_RIGHT,
-  ALIGN_TOP,
-  MODE_IDLE,
-  MODE_ZOOMING,
-} from '../constants';
+import { ACTION_ZOOM, MODE_IDLE, MODE_ZOOMING } from '../constants';
 import { decompose, getSVGPoint, set } from './common';
 import calculateBox from './calculateBox';
-import { Point, SvgViewBox, ViewerMouseAction } from '../types';
-import { SvgViewerState } from '../SvgViewer1';
+import { Point, SvgViewBox, ViewerMouseAction, ViewerSvgAlign } from '../types';
+import { SvgViewerDimensions, SvgViewerState } from '../SvgViewer1';
 
 export const isZoomLevelGoingOutOfBounds = (value: ZoomValue, scaleFactor: number): boolean => {
   const { scaleFactor: curScaleFactor } = decompose(value);
@@ -107,8 +97,13 @@ export const fitSelection = (
   ) as ZoomValue;
 };
 
-export const fitToViewer = (value: ZoomValue, SVGAlignX = ALIGN_LEFT, SVGAlignY = ALIGN_TOP): ZoomValue => {
-  const { viewerWidth, viewerHeight, svgViewbox } = value;
+export const fitToViewer = (
+  // value: SvgViewerState,
+  dimensions: SvgViewerDimensions,
+  alignByX: ViewerSvgAlign = ViewerSvgAlign.CENTER,
+  alignByY: ViewerSvgAlign = ViewerSvgAlign.CENTER,
+): Matrix => {
+  const { width: viewerWidth, height: viewerHeight, viewbox: svgViewbox } = dimensions;
   const { minX, minY, width, height } = svgViewbox;
 
   const scaleX = viewerWidth / width;
@@ -123,17 +118,17 @@ export const fitToViewer = (value: ZoomValue, SVGAlignX = ALIGN_LEFT, SVGAlignY 
   if (scaleX < scaleY) {
     const remainderY = viewerHeight - scaleX * height;
 
-    switch (SVGAlignY) {
-      case ALIGN_TOP:
+    switch (alignByY) {
+      case ViewerSvgAlign.TOP:
         translateY = -minY * scaleLevel;
         break;
-      case ALIGN_CENTER:
+      case ViewerSvgAlign.CENTER:
         translateY = Math.round(remainderY / 2) - minY * scaleLevel;
         break;
-      case ALIGN_BOTTOM:
+      case ViewerSvgAlign.BOTTOM:
         translateY = remainderY - minY * scaleLevel;
         break;
-      case ALIGN_COVER: {
+      case ViewerSvgAlign.COVER: {
         scaleMatrix = scale(scaleY, scaleY);
         const remainderX = viewerWidth - scaleY * width;
         translateX = minX + Math.round(remainderX / 2);
@@ -145,17 +140,17 @@ export const fitToViewer = (value: ZoomValue, SVGAlignX = ALIGN_LEFT, SVGAlignY 
   } else {
     const remainderX = viewerWidth - scaleY * width;
 
-    switch (SVGAlignX) {
-      case ALIGN_LEFT:
+    switch (alignByX) {
+      case ViewerSvgAlign.LEFT:
         translateX = -minX * scaleLevel;
         break;
-      case ALIGN_CENTER:
+      case ViewerSvgAlign.CENTER:
         translateX = Math.round(remainderX / 2) - minX * scaleLevel;
         break;
-      case ALIGN_RIGHT:
+      case ViewerSvgAlign.RIGHT:
         translateX = remainderX - minX * scaleLevel;
         break;
-      case ALIGN_COVER: {
+      case ViewerSvgAlign.COVER: {
         scaleMatrix = scale(scaleX, scaleX);
         const remainderY = viewerHeight - scaleX * height;
         translateY = minY + Math.round(remainderY / 2);
@@ -167,30 +162,30 @@ export const fitToViewer = (value: ZoomValue, SVGAlignX = ALIGN_LEFT, SVGAlignY 
   }
 
   const translationMatrix = translate(translateX, translateY);
-  const matrix = transform(translationMatrix, scaleMatrix);
+  return transform(translationMatrix, scaleMatrix);
 
-  if (isZoomLevelGoingOutOfBounds(value, scaleLevel / value.d)) {
-    return set(value, {
-      mode: MODE_IDLE,
-      startX: null,
-      startY: null,
-      endX: null,
-      endY: null,
-    }) as ZoomValue;
-  }
+  // if (isZoomLevelGoingOutOfBounds(value, scaleLevel / value.d)) {
+  //   return set(value, {
+  //     mode: MODE_IDLE,
+  //     startX: null,
+  //     startY: null,
+  //     endX: null,
+  //     endY: null,
+  //   }) as ZoomValue;
+  // }
 
-  return set(
-    value,
-    {
-      mode: MODE_IDLE,
-      ...limitZoomLevel(value, matrix),
-      startX: null,
-      startY: null,
-      endX: null,
-      endY: null,
-    },
-    ACTION_ZOOM,
-  ) as ZoomValue;
+  // return set(
+  //   value,
+  //   {
+  //     mode: MODE_IDLE,
+  //     ...limitZoomLevel(value, matrix),
+  //     startX: null,
+  //     startY: null,
+  //     endX: null,
+  //     endY: null,
+  //   },
+  //   ACTION_ZOOM,
+  // ) as ZoomValue;
 };
 
 export const zoomOnViewerCenter = (value: ZoomValue, scaleFactor: number): ZoomValue => {

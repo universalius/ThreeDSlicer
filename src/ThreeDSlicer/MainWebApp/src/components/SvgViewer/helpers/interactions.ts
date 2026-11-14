@@ -23,7 +23,7 @@ type InteractionProps = {
 };
 
 export const getMousePosition = (event: React.MouseEvent<SVGSVGElement>, viewerRef: Element | null): Point => {
-  console.log('viewerRef', viewerRef);
+  // console.log('viewerRef', viewerRef);
   if (!viewerRef) {
     return { x: 0, y: 0 };
   }
@@ -95,7 +95,7 @@ export const onMouseMove = (
     case TOOL_AUTO:
     case TOOL_PAN:
       if (oldState.action === ViewerMouseAction.PANNING) {
-        console.log('onMouseMove', newMousePos);
+        // console.log('onMouseMove', newMousePos);
 
         nextState = forceExit
           ? {
@@ -207,7 +207,8 @@ export const onWheel = (
   // window.__onWheelScale = scaleFactor;
   // window.__onWheelNextoldState = nextoldState;
 
-  event.preventDefault();
+  // event.preventDefault();
+
   return {
     ...oldState,
     mousePos: undefined,
