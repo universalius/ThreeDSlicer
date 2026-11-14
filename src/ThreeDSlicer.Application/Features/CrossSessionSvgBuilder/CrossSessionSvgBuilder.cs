@@ -2,6 +2,7 @@ using GeometRi;
 using SvgLib;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using ThreeDSlicer.Application.Features.CylinderObjectToSvgConverter.Models;
 using ThreeDSlicer.Application.Helpers;
@@ -12,7 +13,7 @@ namespace ThreeDSlicer.Application.Features.CrossSessionSvgBuilder;
 
 public class CrossSessionSvgBuilder
 {
-    public SvgDocument BuildSvg(MeshLoopList[] meshes)
+    public SvgDocument BuildSvg(MeshLoopList[] meshes, double viewportWidth, double viewportHeight)
     {
         var svgDocument = SvgDocument.Create();
         svgDocument.Units = "%";
@@ -20,17 +21,22 @@ public class CrossSessionSvgBuilder
         svgDocument.Height = 100;
 
         var allBounds = new List<PolygonBounds>();
-        var index = 1;
-        meshes.ToList().ForEach(m =>
+        foreach (var mesh in meshes)
         {
-            var color = GetColor(index - 1);
-            var meshBounds = AddPathes(svgDocument, m, color, index);
-            AddHatchPattern(svgDocument, meshBounds, color, index);
-            allBounds.Add(meshBounds);
-            index++;
-        });
+            allBounds.Add(GetMeshBounds(mesh));
+        }
 
         var bounds = allBounds.GetBounds();
+        var strokeWidth = ComputeInitialStrokeWidth(bounds, viewportWidth, viewportHeight);
+
+        var index = 1;
+        foreach (var mesh in meshes)
+        {
+            var color = GetColor(index - 1);
+            var meshBounds = AddPathes(svgDocument, mesh, color, index, strokeWidth);
+            AddHatchPattern(svgDocument, meshBounds, color, index, strokeWidth);
+            index++;
+        }
 
         var xMin = bounds.XMin > 0 ? bounds.XMin + 5 : bounds.XMin - 5;
         var yMin = bounds.YMin > 0 ? bounds.YMin + 5 : bounds.YMin - 5;
@@ -40,13 +46,13 @@ public class CrossSessionSvgBuilder
         return svgDocument;
     }
 
-    public PolygonBounds AddPathes(SvgDocument svgDocument, MeshLoopList mesh, string color, int hatchId)
+    public PolygonBounds AddPathes(SvgDocument svgDocument, MeshLoopList mesh, string color, int hatchId, double strokeWidth)
     {
         var meshLoopsBounds = new List<PolygonBounds>();
         foreach (var item in mesh.Items)
         {
             var path = svgDocument.AddPath();
-            FillPath(path, color, hatchId);
+            FillPath(path, color, hatchId, strokeWidth);
 
             var allLoops = new List<Point3d[]> { item.Main };
             if (item.Holes != null)
@@ -62,7 +68,44 @@ public class CrossSessionSvgBuilder
         return meshLoopsBounds.GetBounds();
     }
 
-    private static void AddHatchPattern(SvgDocument svgDocument, PolygonBounds meshBounds, string color, int hatchId)
+    private static PolygonBounds GetMeshBounds(MeshLoopList mesh)
+    {
+        var meshLoopsBounds = new List<PolygonBounds>();
+        foreach (var item in mesh.Items)
+        {
+            meshLoopsBounds.Add(item.Main.GetPolygonBounds());
+        }
+
+        return meshLoopsBounds.GetBounds();
+    }
+
+    private static double ComputeInitialStrokeWidth(PolygonBounds bounds, double viewportWidth, double viewportHeight)
+    {
+        var width = bounds?.Width ?? 0;
+        var height = bounds?.Height ?? 0;
+
+        if (width <= 0 && height <= 0)
+        {
+            return 1;
+        }
+
+        var modelDiagonal = Math.Sqrt((width * width) + (height * height));
+        var viewportDiagonal = Math.Sqrt((viewportWidth * viewportWidth) + (viewportHeight * viewportHeight));
+
+        if (viewportDiagonal <= 0)
+        {
+            return 1;
+        }
+
+        const double targetPixels = 1.0;
+        const double minStroke = 0.25;
+        const double maxStroke = 2.5;
+
+        var strokeWidth = (targetPixels * modelDiagonal) / viewportDiagonal;
+        return Math.Min(maxStroke, Math.Max(minStroke, strokeWidth));
+    }
+
+    private static void AddHatchPattern(SvgDocument svgDocument, PolygonBounds meshBounds, string color, int hatchId, double strokeWidth)
     {
         var patternSize = GetPatternSize(meshBounds, 10);
 
@@ -79,7 +122,7 @@ public class CrossSessionSvgBuilder
         line.X2 = 0;
         line.Y2 = pattern.Height;
         line.SetStyle("stroke", color);
-        line.SetStyle("stroke-width", "0.5");
+        line.SetStyle("stroke-width", strokeWidth.ToString(CultureInfo.InvariantCulture));
         line.SetStyle("stroke-linecap", "square");
     }
 
@@ -98,9 +141,9 @@ public class CrossSessionSvgBuilder
         };
     }
 
-    private void FillPath(SvgPath path, string color, int hatchId)
+    private void FillPath(SvgPath path, string color, int hatchId, double strokeWidth)
     {
-        path.SetStyle("stroke-width", "1");
+        path.SetStyle("stroke-width", strokeWidth.ToString(CultureInfo.InvariantCulture));
         path.SetStyle("stroke", color);
         path.SetStyle("fill", $"url(#hatch-45-{hatchId})");
         path.SetStyle("fill-rule", "evenodd");

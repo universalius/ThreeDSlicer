@@ -100,6 +100,8 @@ namespace ThreeDSlicer
         private async void StartReactApp(object sender, RoutedEventArgs e)
         {
             var meshObjects = await _objToMeshConverter.Convert();
+            double viewportWidth = 800; // Replace with actual viewport width
+            double viewportHeight = 600; // Replace with actual viewport height
 
             try
             {
@@ -169,6 +171,9 @@ namespace ThreeDSlicer
 
                             if (webViewMessage.Type == "app-ready")
                             {
+                                viewportHeight = webViewMessage.ViewportHeight;
+                                viewportWidth = webViewMessage.ViewportWidth;
+
                                 var payload = new
                                 {
                                     type = "app-ready",
@@ -176,8 +181,7 @@ namespace ThreeDSlicer
                                     {
                                         obj = await _objToMeshConverter.GetObjFileContent()
                                     },
-                                }
-                            ;
+                                };
 
                                 var jsonPayload = JsonConvert.SerializeObject(payload);
                                 core.PostWebMessageAsJson(jsonPayload);
@@ -191,7 +195,7 @@ namespace ThreeDSlicer
                                     .Select(m => _cylinderToSvgConverter.Convert(m, webViewMessage.Axis, webViewMessage.CutPosition))
                                     .Where(m => m != null)
                                     .ToArray();
-                                SendSvgToFrontend(core, meshes);
+                                SendSvgToFrontend(core, meshes, viewportWidth, viewportHeight);
                                 return;
                             }
                         };
@@ -208,9 +212,9 @@ namespace ThreeDSlicer
             }
         }
 
-        private void SendSvgToFrontend(CoreWebView2 core, MeshLoopList[] meshes)
+        private void SendSvgToFrontend(CoreWebView2 core, MeshLoopList[] meshes, double viewportWidth, double viewportHeight)
         {
-            var svgDocument = _crossSessionSvgBuilder.BuildSvg(meshes);
+            var svgDocument = _crossSessionSvgBuilder.BuildSvg(meshes, viewportWidth, viewportHeight);
 
             var payload = new
             {

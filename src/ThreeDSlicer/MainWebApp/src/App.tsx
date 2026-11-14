@@ -66,7 +66,7 @@ export default function App() {
   useEffect(() => {
     if (webview) {
       webview.addEventListener('message', consumeMessage);
-      webview.postMessage(JSON.stringify({ type: 'app-ready' }));
+      webview.postMessage(JSON.stringify({ type: 'app-ready', viewportWidth: document.body.clientWidth, viewportHeight: document.body.clientHeight }));
       webview.postMessage(JSON.stringify({ type: 'cross-section', axis: selectedAxis, cutPosition: slicePosition }));
     }
 
@@ -116,7 +116,9 @@ export default function App() {
                 <button
                   key={label}
                   type="button"
-                  className={selectedAxis === axis ? `${styles.axisButton} ${styles.axisButtonSelected}` : styles.axisButton}
+                  className={
+                    selectedAxis === axis ? `${styles.axisButton} ${styles.axisButtonSelected}` : styles.axisButton
+                  }
                   onClick={() => handleAxisButtonClick(axis)}
                 >
                   {label}
@@ -153,4 +155,3 @@ export default function App() {
     </div>
   );
 }
-
