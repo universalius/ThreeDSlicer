@@ -107,7 +107,8 @@ public class CrossSessionSvgBuilder
 
     private static void AddHatchPattern(SvgDocument svgDocument, PolygonBounds meshBounds, string color, int hatchId, double strokeWidth)
     {
-        var patternSize = GetPatternSize(meshBounds, 10);
+        var hatchStroke = Math.Max(strokeWidth * 0.5, 0.01);
+        var patternSize = GetPatternCellSize(meshBounds, 10, hatchStroke);
 
         var defs = svgDocument.AddDefs();
         var pattern = defs.AddPattern();
@@ -122,22 +123,41 @@ public class CrossSessionSvgBuilder
         line.X2 = 0;
         line.Y2 = pattern.Height;
         line.SetStyle("stroke", color);
-        line.SetStyle("stroke-width", strokeWidth.ToString(CultureInfo.InvariantCulture));
+        line.SetStyle("stroke-width", hatchStroke.ToString(CultureInfo.InvariantCulture));
         line.SetStyle("stroke-linecap", "square");
     }
 
-    private static PolygonBounds GetPatternSize(PolygonBounds meshBounds, int linesPerBound)
+    private static PolygonBounds GetPatternCellSize(PolygonBounds meshBounds, int linesPerBound, double strokeWidth)
     {
         var safeLinesPerBound = Math.Max(linesPerBound, 1);
-        var size = Math.Max(meshBounds.Width, meshBounds.Height);
-        var patternStep = size <= 0 ? 1 : size / safeLinesPerBound;
+        var maxMeshBound = Math.Max(meshBounds.Width, meshBounds.Height);
+        var patternStep = maxMeshBound <= 0 ? 1 : maxMeshBound / safeLinesPerBound;
+
+        const double minEmptyAreaRatio = 0.6;
+        var cellSide = Math.Max(patternStep, 0.01);
+
+        while (cellSide > 0)
+        {
+            var cellArea = cellSide * cellSide;
+            var lineLength = cellSide * Math.Sqrt(2);
+            var occupiedArea = lineLength * Math.Max(strokeWidth, 0.01);
+            var emptyArea = Math.Max(0, cellArea - occupiedArea);
+            var emptyAreaRatio = cellArea <= 0 ? 0 : emptyArea / cellArea;
+
+            if (emptyAreaRatio >= minEmptyAreaRatio)
+            {
+                break;
+            }
+
+            cellSide *= 2;
+        }
 
         return new PolygonBounds
         {
             XMin = 0,
-            XMax = patternStep,
+            XMax = cellSide,
             YMin = 0,
-            YMax = patternStep,
+            YMax = cellSide,
         };
     }
 
