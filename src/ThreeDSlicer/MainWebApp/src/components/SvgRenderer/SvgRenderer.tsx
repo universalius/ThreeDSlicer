@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { UncontrolledReactSVGPanZoom, ALIGN_LEFT, ALIGN_CENTER } from 'react-svg-pan-zoom';
 import { renderSvgNode } from '../../helpers/renderSvgNode';
 import { SvgViewer, type SvgViewerHandle } from '../SvgViewer/SvgViewer';
+import { SvgViewer1 } from '../SvgViewer/SvgViewer1';
+import { TOOL_PAN } from '../SvgViewer/constants';
 
 export const SvgRenderer = ({ svgMarkup }: { svgMarkup: string }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -69,7 +71,7 @@ export const SvgRenderer = ({ svgMarkup }: { svgMarkup: string }) => {
         {renderedSvg}
       </UncontrolledReactSVGPanZoom> */}
 
-      <SvgViewer
+      {/* <SvgViewer
         ref={viewer}
         width={viewportSize.width}
         height={viewportSize.height}
@@ -79,6 +81,20 @@ export const SvgRenderer = ({ svgMarkup }: { svgMarkup: string }) => {
         background="transparent"
         miniatureProps={{ position: 'none', background: 'transparent', width: 120, height: 120 }}
         toolbarProps={{ position: 'none' }}
+        svgElement={renderedSvg}
+      /> */}
+
+      <SvgViewer1
+        // ref={viewer}
+        viewerWidth={viewportSize.width}
+        viewerHeight={viewportSize.height}
+        tool={TOOL_PAN}
+        // defaultTool="pan"
+        // scaleFactorMin={0.2}
+        // scaleFactorMax={8}
+        // background="transparent"
+        // miniatureProps={{ position: 'none', background: 'transparent', width: 120, height: 120 }}
+        // toolbarProps={{ position: 'none' }}
         svgElement={renderedSvg}
       />
 

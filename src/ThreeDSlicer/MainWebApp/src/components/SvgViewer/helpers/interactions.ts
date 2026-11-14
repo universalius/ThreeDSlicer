@@ -5,7 +5,7 @@ import { startZooming, stopZooming, updateZooming, zoom } from './zoom';
 import mapRange from './mapRange';
 import { Matrix, toSVG } from 'transformation-matrix';
 import { Point, ViewerMouseAction } from '../types';
-import { SvgViewerState } from '../SvgViewer1';
+import { SvgViewerDimensions, SvgViewerProps, SvgViewerState } from '../SvgViewer1';
 
 type ViewerCoords = {
   x: number;
@@ -23,6 +23,7 @@ type InteractionProps = {
 };
 
 export const getMousePosition = (event: React.MouseEvent<SVGSVGElement>, viewerRef: Element | null): Point => {
+  console.log('viewerRef', viewerRef);
   if (!viewerRef) {
     return { x: 0, y: 0 };
   }
@@ -39,26 +40,29 @@ export const onMouseDown = (
   viewerRef: Element | null,
   tool: string,
   oldState: SvgViewerState,
-  props: InteractionProps,
 ): SvgViewerState => {
   const point = getMousePosition(event, viewerRef);
 
   let nextState = oldState;
 
   switch (tool) {
-    case TOOL_ZOOM_OUT: {
-      const SVGPoint = getSVGPoint(oldState, point);
-      nextState = zoom(oldState, SVGPoint.x, SVGPoint.y, 1 / props.scaleFactor);
-      break;
-    }
+    // case TOOL_ZOOM_OUT: {
+    //   const SVGPoint = getSVGPoint(oldState, point);
+    //   nextState = zoom(oldState, SVGPoint.x, SVGPoint.y, 1 / props.scaleFactor);
+    //   break;
+    // }
 
-    case TOOL_ZOOM_IN:
-      nextState = startZooming(oldState, point);
-      break;
+    // case TOOL_ZOOM_IN:
+    //   nextState = startZooming(oldState, point);
+    //   break;
 
     case TOOL_AUTO:
     case TOOL_PAN:
-      nextState = startPanning(oldState, point);
+      nextState = {
+        ...oldState,
+        mousePos: point,
+        action: ViewerMouseAction.PANNING,
+      };
       break;
 
     default:
@@ -74,27 +78,37 @@ export const onMouseMove = (
   viewerRef: Element | null,
   tool: string,
   oldState: SvgViewerState,
-  props: InteractionProps,
-  coords: ViewerCoords | null = null,
+  dimensions: SvgViewerDimensions,
 ): SvgViewerState => {
-  const { x, y } = coords ?? getMousePosition(event, viewerRef);
+  const newMousePos = getMousePosition(event, viewerRef);
 
   const forceExit = event.buttons === 0;
   let nextState = oldState;
 
   switch (tool) {
-    case TOOL_ZOOM_IN:
-      if (oldState.action === ViewerMouseAction.ZOOMING) {
-        nextState = forceExit ? stopZooming(oldState, x, y, props.scaleFactor) : updateZooming(oldState, x, y);
-      }
-      break;
+    // case TOOL_ZOOM_IN:
+    //   if (oldState.action === ViewerMouseAction.ZOOMING) {
+    //     nextState = forceExit ? stopZooming(oldState, x, y, props.scaleFactor) : updateZooming(oldState, x, y);
+    //   }
+    //   break;
 
     case TOOL_AUTO:
     case TOOL_PAN:
       if (oldState.action === ViewerMouseAction.PANNING) {
+        console.log('onMouseMove', newMousePos);
+
         nextState = forceExit
-          ? stopPanning(oldState)
-          : updatePanning(oldState, x, y, props.preventPanOutside ? 20 : undefined);
+          ? {
+              ...oldState,
+              mousePos: undefined,
+              action: ViewerMouseAction.IDLE,
+            }
+          : {
+              ...oldState,
+              mousePos: newMousePos,
+              action: ViewerMouseAction.PANNING,
+              transformMatrix: updatePanning(oldState, newMousePos, dimensions),
+            };
       }
       break;
 
@@ -111,30 +125,33 @@ export const onMouseUp = (
   viewerRef: Element | null,
   tool: string,
   oldState: SvgViewerState,
-  props: InteractionProps,
-  coords: ViewerCoords | null = null,
+  dimensions: SvgViewerDimensions,
 ): SvgViewerState => {
-  const { x, y } = coords ?? getMousePosition(event, viewerRef);
+  const newMousePos = getMousePosition(event, viewerRef);
 
   let nextState = oldState;
 
   switch (tool) {
-    case TOOL_ZOOM_OUT:
-      if (oldState.action === ViewerMouseAction.ZOOMING) {
-        nextState = stopZooming(oldState, x, y, 1 / props.scaleFactor);
-      }
-      break;
+    // case TOOL_ZOOM_OUT:
+    //   if (oldState.action === ViewerMouseAction.ZOOMING) {
+    //     nextState = stopZooming(oldState, x, y, 1 / dimensions.scaleFactor);
+    //   }
+    //   break;
 
-    case TOOL_ZOOM_IN:
-      if (oldState.action === ViewerMouseAction.ZOOMING) {
-        nextState = stopZooming(oldState, x, y, props.scaleFactor);
-      }
-      break;
+    // case TOOL_ZOOM_IN:
+    //   if (oldState.action === ViewerMouseAction.ZOOMING) {
+    //     nextState = stopZooming(oldState, x, y, dimensions.scaleFactor);
+    //   }
+    //   break;
 
     case TOOL_AUTO:
     case TOOL_PAN:
       if (oldState.action === ViewerMouseAction.PANNING) {
-        nextState = stopPanning(oldState);
+        nextState = {
+          ...oldState,
+          mousePos: undefined,
+          action: ViewerMouseAction.IDLE,
+        };
       }
       break;
 
@@ -146,55 +163,57 @@ export const onMouseUp = (
   return nextState;
 };
 
-export const onDoubleClick = (
-  event: React.MouseEvent<SVGSVGElement>,
-  viewerRef: Element | null,
-  tool: string,
-  oldState: SvgViewerState,
-  props: InteractionProps,
-  coords: ViewerCoords | null = null,
-): SvgViewerState => {
-  const { x, y } = coords ?? getMousePosition(event, viewerRef);
+// export const onDoubleClick = (
+//   event: React.MouseEvent<SVGSVGElement>,
+//   viewerRef: Element | null,
+//   tool: string,
+//   oldState: SvgViewerState,
+//   props: InteractionProps,
+//   coords: ViewerCoords | null = null,
+// ): SvgViewerState => {
+//   const { x, y } = coords ?? getMousePosition(event, viewerRef);
 
-  let nextState = oldState;
+//   let nextState = oldState;
 
-  if (tool === TOOL_AUTO && !props.disableDoubleClickZoomWithToolAuto) {
-    const { modifierKeys = [] } = props;
-    const SVGPoint = getSVGPoint(oldState, x, y);
-    const modifierKeysReducer = (current: boolean, modifierKey: string) =>
-      current || !!event.getModifierState?.(modifierKey);
-    const modifierKeyActive = modifierKeys.reduce(modifierKeysReducer, false);
-    const scaleFactor = modifierKeyActive ? 1 / props.scaleFactor : props.scaleFactor;
-    nextState = zoom(nextState, SVGPoint.x, SVGPoint.y, scaleFactor);
-  }
+//   if (tool === TOOL_AUTO && !props.disableDoubleClickZoomWithToolAuto) {
+//     const { modifierKeys = [] } = props;
+//     const SVGPoint = getSVGPoint(oldState, x, y);
+//     const modifierKeysReducer = (current: boolean, modifierKey: string) =>
+//       current || !!event.getModifierState?.(modifierKey);
+//     const modifierKeyActive = modifierKeys.reduce(modifierKeysReducer, false);
+//     const scaleFactor = modifierKeyActive ? 1 / props.scaleFactor : props.scaleFactor;
+//     nextState = zoom(nextState, SVGPoint.x, SVGPoint.y, scaleFactor);
+//   }
 
-  event.preventDefault();
-  return nextState;
-};
+//   event.preventDefault();
+//   return nextState;
+// };
 
 export const onWheel = (
   event: React.WheelEvent<SVGSVGElement>,
   viewerRef: Element | null,
-  tool: string,
   oldState: SvgViewerState,
-  props: InteractionProps,
-  coords: ViewerCoords | null = null,
+  scaleFactorOnWheel: number,
 ): SvgViewerState => {
-  const { x, y } = coords ?? getMousePosition(event as unknown as MouseEvent, viewerRef);
+  const newMousePos = getMousePosition(event, viewerRef);
 
-  if (!props.detectWheel) return oldState;
+  // if (!props.detectWheel) return oldState;
 
   const delta = Math.max(-1, Math.min(1, event.deltaY));
-  const scaleFactor = mapRange(delta, -1, 1, props.scaleFactorOnWheel, 1 / props.scaleFactorOnWheel);
+  const scaleFactor = mapRange(delta, -1, 1, scaleFactorOnWheel, 1 / scaleFactorOnWheel);
 
-  const SVGPoint = getSVGPoint(oldState, x, y);
-  const nextoldState = zoom(oldState, SVGPoint.x, SVGPoint.y, scaleFactor);
+  const nextTransformMatrix = zoom(oldState, newMousePos, scaleFactor);
   // window.__onWheelCalled = true;
   // window.__onWheelScale = scaleFactor;
   // window.__onWheelNextoldState = nextoldState;
 
   event.preventDefault();
-  return nextoldState;
+  return {
+    ...oldState,
+    mousePos: undefined,
+    action: ViewerMouseAction.ZOOMING,
+    transformMatrix: nextTransformMatrix,
+  };
 };
 
 export const onMouseEnterOrLeave = (
@@ -202,8 +221,7 @@ export const onMouseEnterOrLeave = (
   viewerRef: Element | null,
   tool: string,
   oldState: SvgViewerState,
-  props: InteractionProps,
-  coords: ViewerCoords | null = null,
+  dimensions: SvgViewerDimensions,
 ): SvgViewerState => {
   const nextoldState = setFocus(oldState, event.type === 'mouseenter');
 

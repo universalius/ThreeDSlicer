@@ -1,99 +1,96 @@
-import { Matrix, toSVG } from 'transformation-matrix';
+import { identity, Matrix, toSVG } from 'transformation-matrix';
 import { parseViewBox } from './helpers/parseViewBox';
-import { ReactElement, useState } from 'react';
+import { ReactElement, useEffect, useState } from 'react';
 import { isTouchDevice } from './helpers/detect-touch';
 import {
   onMouseDown,
   onMouseMove,
   onMouseUp,
-  onDoubleClick,
+  // onDoubleClick,
   onMouseEnterOrLeave,
-  onMouseDown1,
+  onWheel,
 } from './helpers/interactions';
-import { Point, SvgElementProps, ViewerMouseAction } from './types';
+import { Point, SvgElementProps, SvgViewBox, ViewerMouseAction } from './types';
 import React from 'react';
 
-export type SvgViewerState = { mousePos: Point; action: ViewerMouseAction; transformMatrix: Matrix };
+export type SvgViewerState = { mousePos?: Point; action: ViewerMouseAction; transformMatrix?: Matrix };
 
-export const SvgViewer = ({
-  viewerWidth,
-  viewerHeight,
-  className,
-  svgElement,
-  tool,
-}: {
+export type SvgViewerProps = {
   viewerWidth: number;
   viewerHeight: number;
   className: string;
   svgElement: ReactElement<SvgElementProps>;
   tool: string;
-}) => {
+};
+
+export type SvgViewerDimensions = {
+  width: number;
+  height: number;
+  viewbox: SvgViewBox;
+};
+
+export const SvgViewer1 = ({ viewerWidth, viewerHeight, className, svgElement, tool }: SvgViewerProps) => {
   const [svgState, setSvgState] = useState<SvgViewerState>({
     mousePos: { x: 0, y: 0 },
     action: ViewerMouseAction.IDLE,
-    transformMatrix: undefined,
+    transformMatrix: identity(),
   });
 
   const viewerRef = React.useRef<SVGSVGElement>(null);
   const svgViewbox = parseViewBox(svgElement.props.viewBox ?? '');
 
-  const mapActionToMouseAction = (action: string): ViewerMouseAction => {
-    switch (action) {
-      case 'MODE_IDLE':
-        return ViewerMouseAction.IDLE;
-      case 'MODE_PANNING':
-        return ViewerMouseAction.PANNING;
-      case 'MODE_ZOOMING':
-        return ViewerMouseAction.ZOOMING;
-      default:
-        return ViewerMouseAction.IDLE;
-    }
-  };
-
   const handleMouseDown = (event: React.MouseEvent<SVGSVGElement>) => {
-    const newState = onMouseDown(event, viewerRef.current, tool, undefined, undefined);
-    setSvgState({
-      ...svgState,
-      mousePos: { x: newState.startX, y: newState.startY },
-      action: mapActionToMouseAction(newState.mode),
-    });
+    const newState = onMouseDown(event, viewerRef.current, tool, svgState);
+    setSvgState(newState);
   };
 
   const handleMouseMove = (event: React.MouseEvent<SVGSVGElement>) => {
-    let { left, top } = viewerRef.current.getBoundingClientRect();
-    let x = event.clientX - Math.round(left);
-    let y = event.clientY - Math.round(top);
+    // let { left, top } = viewerRef.current.getBoundingClientRect();
+    // let x = event.clientX - Math.round(left);
+    // let y = event.clientY - Math.round(top);
 
-    let nextValue = onMouseMove(event, viewerRef.current, tool, getValue, viewerProps, { x, y });
-    if (getValue !== nextValue) setValue(nextValue);
-    setPointerX(x);
-    setPointerY(y);
+    let newState = onMouseMove(event, viewerRef.current, tool, svgState, {
+      width: viewerWidth,
+      height: viewerHeight,
+      viewbox: svgViewbox,
+    });
+
+    setSvgState(newState);
+
+    // if (getValue !== nextValue) setValue(nextValue);
+    // setPointerX(x);
+    // setPointerY(y);
   };
 
   const handleMouseUp = (event: React.MouseEvent<SVGSVGElement>) => {
-    let nextValue = onMouseUp(event, viewerRef.current, tool, getValue, viewerProps);
-    if (getValue !== nextValue) setValue(nextValue);
+    let newState = onMouseMove(event, viewerRef.current, tool, svgState, {
+      width: viewerWidth,
+      height: viewerHeight,
+      viewbox: svgViewbox,
+    });
+
+    setSvgState(newState);
   };
 
-  const handleMouseEnter = (event: React.MouseEvent<SVGSVGElement>) => {
-    if (isTouchDevice()) return;
-    let nextValue = onMouseEnterOrLeave(event, viewerRef.current, tool, getValue, viewerProps);
-    if (getValue !== nextValue) setValue(nextValue);
-  };
+  // const handleMouseEnter = (event: React.MouseEvent<SVGSVGElement>) => {
+  //   if (isTouchDevice()) return;
+  //   let nextValue = onMouseEnterOrLeave(event, viewerRef.current, tool, getValue, viewerProps);
+  //   if (getValue !== nextValue) setValue(nextValue);
+  // };
 
-  const handleMouseLeave = (event: React.MouseEvent<SVGSVGElement>) => {
-    let nextValue = onMouseEnterOrLeave(event, viewerRef.current, tool, getValue, viewerProps);
-    if (getValue !== nextValue) setValue(nextValue);
-  };
+  // const handleMouseLeave = (event: React.MouseEvent<SVGSVGElement>) => {
+  //   let nextValue = onMouseEnterOrLeave(event, viewerRef.current, tool, getValue, viewerProps);
+  //   if (getValue !== nextValue) setValue(nextValue);
+  // };
 
   const handleClick = (event: React.MouseEvent<SVGSVGElement>) => {
     // handleViewerEvent(event);
   };
 
-  const handleDoubleClick = (event: React.MouseEvent<SVGSVGElement>) => {
-    let nextValue = onDoubleClick(event, viewerRef.current, tool, getValue, viewerProps);
-    if (getValue !== nextValue) setValue(nextValue);
-  };
+  // const handleDoubleClick = (event: React.MouseEvent<SVGSVGElement>) => {
+  //   let nextValue = onDoubleClick(event, viewerRef.current, tool, getValue, viewerProps);
+  //   if (getValue !== nextValue) setValue(nextValue);
+  // };
 
   const handleTouchStart = (event: React.TouchEvent<SVGSVGElement>) => {
     // let nextValue = onTouchStart(event, viewerRef.current, tool, getValue, viewerProps);
@@ -115,26 +112,37 @@ export const SvgViewer = ({
     // if (getValue !== nextValue) setValue(nextValue);
   };
 
+  const handleOnWheel = (event: React.WheelEvent<SVGSVGElement>) => {
+    const scaleFactorOnWheel = 1.06;
+    let newState = onWheel(event, viewerRef.current, svgState, scaleFactorOnWheel);
+    setSvgState(newState);
+  };
+
   return (
     <div style={{ position: 'relative', width: viewerWidth, height: viewerHeight }} className={className}>
       <svg
+        ref={viewerRef}
         width={viewerWidth}
         height={viewerHeight}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onClick={handleClick}
-        onDoubleClick={handleDoubleClick}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
+        // onDoubleClick={handleDoubleClick}
+        // onMouseEnter={handleMouseEnter}
+        // onMouseLeave={handleMouseLeave}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
         onTouchCancel={handleTouchCancel}
+        onWheel={handleOnWheel}
       >
         <rect fill="#616264" x={0} y={0} width={viewerWidth} height={viewerHeight} style={{ pointerEvents: 'none' }} />
 
-        <g transform={toSVG(transformMatrix)} style={{ pointerEvents: 'none' }}>
+        <g
+          transform={svgState?.transformMatrix ? toSVG(svgState.transformMatrix) : undefined}
+          style={{ pointerEvents: 'none' }}
+        >
           <rect
             fill="#fff"
             x={svgViewbox.minX || 0}

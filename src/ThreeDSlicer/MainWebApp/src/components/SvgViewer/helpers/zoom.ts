@@ -1,4 +1,4 @@
-import { fromObject, scale, transform, translate } from 'transformation-matrix';
+import { fromObject, Matrix, scale, transform, translate } from 'transformation-matrix';
 
 import {
   ACTION_ZOOM,
@@ -11,12 +11,10 @@ import {
   MODE_IDLE,
   MODE_ZOOMING,
 } from '../constants';
-import { type ViewerValue, decompose, getSVGPoint, set } from './common';
+import { decompose, getSVGPoint, set } from './common';
 import calculateBox from './calculateBox';
-
-type ZoomValue = ViewerValue & {
-  d: number;
-};
+import { Point, SvgViewBox, ViewerMouseAction } from '../types';
+import { SvgViewerState } from '../SvgViewer1';
 
 export const isZoomLevelGoingOutOfBounds = (value: ZoomValue, scaleFactor: number): boolean => {
   const { scaleFactor: curScaleFactor } = decompose(value);
@@ -43,30 +41,32 @@ export const limitZoomLevel = (value: ZoomValue, matrix: Record<string, number>)
   });
 };
 
-export const zoom = (value: ZoomValue, SVGPointX: number, SVGPointY: number, scaleFactor: number): ZoomValue => {
-  if (isZoomLevelGoingOutOfBounds(value, scaleFactor)) {
-    return value;
+export const zoom = (oldState: SvgViewerState, mousePos: Point, scaleFactor: number): Matrix => {
+  const svgPoint = getSVGPoint(oldState?.transformMatrix, mousePos);
+
+  if (isZoomLevelGoingOutOfBounds(oldState, scaleFactor)) {
+    return oldState.transformMatrix;
   }
 
-  const matrix = transform(
-    fromObject(value),
-    translate(SVGPointX, SVGPointY),
+  return transform(
+    oldState.transformMatrix,
+    translate(svgPoint.x, svgPoint.y),
     scale(scaleFactor, scaleFactor),
-    translate(-SVGPointX, -SVGPointY),
+    translate(-svgPoint.x, -svgPoint.y),
   );
 
-  return set(
-    value,
-    {
-      mode: MODE_IDLE,
-      ...matrix,
-      startX: null,
-      startY: null,
-      endX: null,
-      endY: null,
-    },
-    ACTION_ZOOM,
-  ) as ZoomValue;
+  // return set(
+  //   oldState,
+  //   {
+  //     mode: MODE_IDLE,
+  //     ...matrix,
+  //     startX: null,
+  //     startY: null,
+  //     endX: null,
+  //     endY: null,
+  //   },
+  //   ACTION_ZOOM,
+  // ) as ZoomValue;
 };
 
 export const fitSelection = (

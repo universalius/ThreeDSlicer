@@ -39,8 +39,9 @@ export const isValueValid = (value: unknown): value is SvgViewerState => {
   );
 };
 
-export const getSVGPoint = (oldState: SvgViewerState, mousePos: Point) => {
-  const inverseMatrix = inverse(oldState as Matrix);
+export const getSVGPoint = (matrix: Matrix, mousePos: Point) => {
+  // console.log('matrix', matrix);
+  const inverseMatrix = inverse(matrix);
 
   return applyToPoint(inverseMatrix, mousePos);
 };
